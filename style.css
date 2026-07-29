@@ -166,15 +166,16 @@
   }
   .swatch b{font-family:'Fraunces',serif; font-size:15px; font-weight:500;}
   .swatch span{font-size:11px; opacity:0.85; letter-spacing:0.03em;}
-  .sw1{--wc1:#3B2415; --wc2:#241407;}
-  .sw2{--wc1:#5A3A1E; --wc2:#33200E;}
-  .sw3{--wc1:#6E4A26; --wc2:#3E2A15;}
+  .sw1{--wc1:#3A3A3A; --wc2:#161616;}
+  .sw2{--wc1:#B8BEC4; --wc2:#2E3134;}
+  .sw3{--wc1:#8A9096; --wc2:#33363A;}
 
   .about-art{position:relative;}
   .about-art .frame{
     border:1px solid var(--line); padding:26px; border-radius:2px;
     background:repeating-linear-gradient(100deg, rgba(27,18,11,0.03) 0 2px, transparent 2px 22px);
   }
+  .about-art .frame img{width:100%; display:block; border-radius:2px;}
 
   /* ---------- PRODUCTS ---------- */
   .products{background:var(--walnut-950); color:var(--text-light);}
