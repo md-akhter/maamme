@@ -190,6 +190,23 @@
     btn.disabled = true;
     btn.textContent = 'পাঠানো হচ্ছে...';
 
+    // Save to Firestore ("orders" collection) — this is what the admin panel reads.
+    if (window.firebase && firebase.firestore) {
+      firebase.firestore().collection('orders').add({
+        orderId: lastOrder.orderId,
+        name: lastOrder.name,
+        phone: lastOrder.phone,
+        product: lastOrder.product,
+        quantity: lastOrder.qty,
+        address: lastOrder.address,
+        note: lastOrder.note,
+        total: lastOrder.total,
+        date: lastOrder.dateStr,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch((err) => console.error('Firestore save failed:', err));
+    }
+
+    // Also keep saving to Netlify Forms as a backup record.
     const formData = new URLSearchParams();
     formData.append('form-name', 'order');
     formData.append('order_id', lastOrder.orderId);

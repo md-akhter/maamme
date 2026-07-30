@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,22 +29,27 @@
 
     <div class="card">🗑️ Delete Product</div>
 
-    <div class="card">📦 Customer Orders</div>
+    <div class="card">
+      <h3>📦 Customer Orders</h3>
+      <div id="ordersList">লোড হচ্ছে...</div>
+    </div>
 
     <br>
 
     <button onclick="logout()">Logout</button>
 
 </div>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-<!-- Your Admin JS -->
+<!-- Shared config (used by index.html too) -->
+<script src="firebase-init.js"></script>
 
+<!-- Admin logic -->
 <script src="admin.js"></script>
-</script>
-
 
 </body>
 </html>
