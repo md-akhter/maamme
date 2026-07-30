@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maamme Admin Panel</title>
+
+   <link rel="stylesheet" type="text/css" href="admin.css">
+</head>
+<body>
+
+<div class="login-box" id="login">
+    <h2>Admin Login</h2>
+
+    <input type="email" id="email" placeholder="Admin Email">
+
+    <input type="password" id="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+</div>
+
+<div id="dashboard">
+
+    <h2>Maamme Admin Dashboard</h2>
+
+    <div class="card">➕ Add Product</div>
+
+    <div class="card">✏️ Edit Product</div>
+
+    <div class="card">🗑️ Delete Product</div>
+
+    <div class="card">📦 Customer Orders</div>
+
+    <br>
+
+    <button onclick="logout()">Logout</button>
+
+</div>
+
+<script src="admin.js">
+
+</script>
+
+
+</body>
+</html>
