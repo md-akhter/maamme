@@ -109,3 +109,25 @@
             border:1px solid #ccc;
             font-size:13px;
         }
+
+        .card label{
+            display:block;
+            font-size:12px;
+            color:#666;
+            margin-top:10px;
+            margin-bottom:2px;
+        }
+
+        .small-btn{
+            width:auto;
+            padding:6px 12px;
+            font-size:13px;
+            margin:0;
+        }
+
+        .delete-btn{
+            background:#c0392b;
+        }
+        .delete-btn:hover{
+            background:#992d22;
+        }

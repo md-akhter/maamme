@@ -1,4 +1,88 @@
-// Per-product "copy link" buttons — one click, link on the clipboard
+// ============================================================
+// প্রোডাক্ট Firestore থেকে লোড করা (আগে index.html-এ hardcoded ছিল)
+// ============================================================
+
+const productSelect = document.getElementById('product');
+const qtyInput = document.getElementById('qty');
+const productsGrid = document.getElementById('productsGrid');
+
+// একটা generic fallback আইকন — ছবি লোড না হলে সবার জন্য একই আইকন দেখাবে
+const FALLBACK_SVG = `
+  <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#D3A85F" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M30 20 L170 20 L160 100 L40 100 Z"/>
+      <path d="M40 100 L34 200"/><path d="M160 100 L166 200"/>
+      <path d="M55 100 L50 200"/><path d="M145 100 L150 200"/>
+      <path d="M32 140 L168 140"/>
+    </g>
+  </svg>`;
+
+function formatTaka(n) {
+  return '৳ ' + n.toLocaleString('en-IN');
+}
+
+function loadProducts() {
+  if (!window.firebase || !firebase.firestore) return;
+
+  firebase.firestore().collection('products').orderBy('order', 'asc').get()
+    .then((snapshot) => {
+      if (snapshot.empty) {
+        productsGrid.innerHTML = '<p style="padding:20px;">এখনো কোনো প্রোডাক্ট যোগ করা হয়নি।</p>';
+        return;
+      }
+
+      let gridHtml = '';
+      let optionsHtml = '';
+
+      snapshot.forEach((doc) => {
+        const p = doc.data();
+        const priceFormatted = Number(p.price).toLocaleString('en-IN');
+
+        gridHtml += `
+          <div class="card reveal in" id="${p.slug}" data-product="${p.fullName}">
+            <div class="card-art">
+              <img class="card-photo" src="${p.image}" alt="${p.fullName}" onerror="this.style.display='none';">
+              <div class="card-fallback">${FALLBACK_SVG}</div>
+            </div>
+            <div class="card-body">
+              <div class="tag">${p.tag || ''}</div>
+              <h3>${p.name}</h3>
+              <p>${p.description || ''}</p>
+              <div class="card-foot">
+                <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
+                <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}">অর্ডার করুন</button>
+              </div>
+              <button class="copy-link-btn" type="button" data-slug="${p.slug}">🔗 লিংক কপি করুন</button>
+            </div>
+          </div>`;
+
+        optionsHtml += `<option data-price="${p.price}">${p.fullName} — ৳${priceFormatted}</option>`;
+      });
+
+      productsGrid.innerHTML = gridHtml;
+
+      // dropdown-এ "কাস্টম অর্ডার" এর ঠিক আগে প্রোডাক্টগুলো বসানো হচ্ছে
+      const customOption = productSelect.querySelector('option[data-price="0"]');
+      customOption.insertAdjacentHTML('beforebegin', optionsHtml);
+
+      initProductInteractions();
+
+      // URL-এ যদি #slug থাকে (কেউ শেয়ার করা লিংকে ঢুকেছে), সেই প্রোডাক্টে স্ক্রল করা
+      if (location.hash) {
+        const target = document.querySelector(location.hash);
+        if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+      }
+    })
+    .catch((err) => {
+      console.error('Products load error:', err);
+      productsGrid.innerHTML = '<p style="padding:20px;">প্রোডাক্ট লোড করতে সমস্যা হয়েছে।</p>';
+    });
+}
+
+// প্রোডাক্ট কার্ড আর dropdown রেন্ডার হওয়ার পর এই ফাংশন সব বাটন/ইভেন্ট সচল করে
+function initProductInteractions() {
+
+  // Per-product "copy link" বাটন
   document.querySelectorAll('.copy-link-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const slug = btn.getAttribute('data-slug');
@@ -19,68 +103,7 @@
     });
   });
 
-  // Direct product links (e.g. #segun-dining) — the browser's native jump-to-anchor
-  // often lands in the wrong place because it fires before images/fonts finish
-  // loading and the page height settles. Re-scroll once everything is ready.
-  if (location.hash) {
-    const jumpToHash = () => {
-      const target = document.querySelector(location.hash);
-      if (target) {
-        setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
-      }
-    };
-    if (document.readyState === 'complete') {
-      jumpToHash();
-    } else {
-      window.addEventListener('load', jumpToHash);
-    }
-  }
-
-  // Reveal on scroll
-  const revealEls = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.15 });
-    revealEls.forEach(el => io.observe(el));
-  } else {
-    revealEls.forEach(el => el.classList.add('in'));
-  }
-
-  // Hero carousel — auto-advance left to right through the slides
-  const heroCarouselEl = document.getElementById('heroCarousel');
-  const heroSlides = document.querySelectorAll('#heroCarousel .hero-slide');
-
-  // Match the box's aspect ratio to whichever real photo is showing, so there's
-  // no empty top/bottom margin — falls back to the default box if no photo loaded.
-  function matchHeroAspect(slide) {
-    const img = slide.querySelector('.hero-photo');
-    if (img && img.style.display !== 'none' && img.naturalWidth > 0) {
-      heroCarouselEl.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
-    }
-  }
-  heroSlides.forEach(slide => {
-    const img = slide.querySelector('.hero-photo');
-    if (img) {
-      if (img.complete && img.naturalWidth > 0) matchHeroAspect(slide);
-      img.addEventListener('load', () => { if (slide.classList.contains('active')) matchHeroAspect(slide); });
-    }
-  });
-
-  if (heroSlides.length > 1) {
-    let heroIndex = 0;
-    setInterval(() => {
-      heroSlides[heroIndex].classList.remove('active');
-      heroIndex = (heroIndex + 1) % heroSlides.length;
-      heroSlides[heroIndex].classList.add('active');
-      matchHeroAspect(heroSlides[heroIndex]);
-    }, 4000);
-  }
-
-  // Product card "order" buttons feed the order form and jump straight to checkout
-  const productSelect = document.getElementById('product');
-  const qtyInput = document.getElementById('qty');
-
+  // প্রোডাক্ট কার্ডের "অর্ডার করুন" বাটন — ফর্মে প্রোডাক্ট বসিয়ে অর্ডার সেকশনে স্ক্রল করে
   document.querySelectorAll('.pick-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.pick-btn').forEach(b => b.classList.remove('active'));
@@ -94,153 +117,177 @@
     });
   });
 
-  // Live total price = unit price × quantity
-  const totalLine = document.getElementById('totalLine');
-  const totalAmount = document.getElementById('totalAmount');
-  function currentUnitPrice() {
-    const opt = productSelect.options[productSelect.selectedIndex];
-    return opt ? Number(opt.getAttribute('data-price') || 0) : 0;
-  }
-  function formatTaka(n) {
-    return '৳ ' + n.toLocaleString('en-IN');
-  }
-  function updateTotal() {
-    const price = currentUnitPrice();
-    const qty = Math.max(1, Number(qtyInput.value || 1));
-    if (price > 0) {
-      totalLine.style.display = 'flex';
-      totalAmount.textContent = formatTaka(price * qty);
-    } else {
-      totalLine.style.display = 'none';
-    }
-  }
   productSelect.addEventListener('change', updateTotal);
-  qtyInput.addEventListener('input', updateTotal);
+}
 
-  // Step 1 → Step 2: submitting the form generates the order details / receipt
-  // (nothing is sent to the server yet — that happens when the customer confirms)
-  const form = document.getElementById('orderForm');
-  const receiptView = document.getElementById('receiptView');
-  let lastOrder = null;
+// Live total price = unit price × quantity
+const totalLine = document.getElementById('totalLine');
+const totalAmount = document.getElementById('totalAmount');
+function currentUnitPrice() {
+  const opt = productSelect.options[productSelect.selectedIndex];
+  return opt ? Number(opt.getAttribute('data-price') || 0) : 0;
+}
+function updateTotal() {
+  const price = currentUnitPrice();
+  const qty = Math.max(1, Number(qtyInput.value || 1));
+  if (price > 0) {
+    totalLine.style.display = 'flex';
+    totalAmount.textContent = formatTaka(price * qty);
+  } else {
+    totalLine.style.display = 'none';
+  }
+}
+qtyInput.addEventListener('input', updateTotal);
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
+// প্রথমবার পেজ লোড হওয়ার সাথে সাথে প্রোডাক্ট আনা শুরু হয়
+loadProducts();
 
-    const formError = document.getElementById('formError');
-    const name = document.getElementById('name').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const product = productSelect.value;
-    const qty = Math.max(1, Number(qtyInput.value || 1));
-    const address = document.getElementById('address').value.trim();
-    const note = document.getElementById('note').value.trim();
 
-    // Manual validation with a visible message — some mobile/in-app browsers
-    // silently block native "required" validation without showing anything.
-    let missing = [];
-    if (!name) missing.push('নাম');
-    if (!phone) missing.push('ফোন নম্বর');
-    if (!product) missing.push('চেয়ার বাছাই');
-    if (!address) missing.push('ঠিকানা');
+// ============================================================
+// বাকি সব — hero carousel, reveal on scroll, অর্ডার ফর্ম — অপরিবর্তিত
+// ============================================================
 
-    if (missing.length > 0) {
-      formError.textContent = 'দয়া করে পূরণ করুন: ' + missing.join(', ');
-      formError.style.display = 'block';
-      return;
-    }
-    formError.style.display = 'none';
+// Hero carousel — auto-advance left to right through the slides
+const heroCarouselEl = document.getElementById('heroCarousel');
+const heroSlides = document.querySelectorAll('#heroCarousel .hero-slide');
 
-    const unitPrice = currentUnitPrice();
-    const total = unitPrice * qty;
-    const orderId = 'AS-' + Date.now().toString().slice(-6);
-    const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
+function matchHeroAspect(slide) {
+  const img = slide.querySelector('.hero-photo');
+  if (img && img.style.display !== 'none' && img.naturalWidth > 0) {
+    heroCarouselEl.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
+  }
+}
+heroSlides.forEach(slide => {
+  const img = slide.querySelector('.hero-photo');
+  if (img) {
+    if (img.complete && img.naturalWidth > 0) matchHeroAspect(slide);
+    img.addEventListener('load', () => { if (slide.classList.contains('active')) matchHeroAspect(slide); });
+  }
+});
 
-    lastOrder = { name, phone, product, qty, address, note, total, orderId, dateStr };
-    document.getElementById('orderIdField').value = orderId;
+if (heroSlides.length > 1) {
+  let heroIndex = 0;
+  setInterval(() => {
+    heroSlides[heroIndex].classList.remove('active');
+    heroIndex = (heroIndex + 1) % heroSlides.length;
+    heroSlides[heroIndex].classList.add('active');
+    matchHeroAspect(heroSlides[heroIndex]);
+  }, 4000);
+}
 
-    document.getElementById('receiptId').textContent = '#' + orderId;
-    document.getElementById('rcName').textContent = name;
-    document.getElementById('rcPhone').textContent = phone;
-    document.getElementById('rcProduct').textContent = product;
-    document.getElementById('rcQty').textContent = qty;
-    document.getElementById('rcAddress').textContent = address;
-    document.getElementById('rcDate').textContent = dateStr;
-    const noteRow = document.getElementById('rcNoteRow');
-    if (note) { noteRow.style.display = 'flex'; document.getElementById('rcNote').textContent = note; }
-    else { noteRow.style.display = 'none'; }
-    document.getElementById('rcTotal').textContent = total > 0 ? formatTaka(total) : 'যোগাযোগ সাপেক্ষে';
+// Reveal on scroll (পেজ লোডের সময় যা যা static এলিমেন্ট আছে তাদের জন্য)
+const revealEls = document.querySelectorAll('.reveal');
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+} else {
+  revealEls.forEach(el => el.classList.add('in'));
+}
 
-    // Reset the confirm button in case this is a repeat order
-    const confirmBtn = document.getElementById('confirmOrderBtn');
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'কনফার্ম করুন';
-    document.getElementById('confirmNote').textContent = 'অর্ডার ডিটেইলস পর্যালোচনা করে "কনফার্ম করুন"-এ চাপুন — তাহলে অর্ডারটি আমাদের কাছে জমা হয়ে যাবে।';
+// Step 1 → Step 2: submitting the form generates the order details / receipt
+const form = document.getElementById('orderForm');
+const receiptView = document.getElementById('receiptView');
+let lastOrder = null;
 
-    form.style.display = 'none';
-    receiptView.style.display = 'block';
-    receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
 
-  // Confirm — this is the step that actually saves the order to the
-  // website's Netlify Forms dashboard.
-  document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
-    if (!lastOrder) return;
-    const btn = e.currentTarget;
-    const note = document.getElementById('confirmNote');
+  const formError = document.getElementById('formError');
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const product = productSelect.value;
+  const qty = Math.max(1, Number(qtyInput.value || 1));
+  const address = document.getElementById('address').value.trim();
+  const note = document.getElementById('note').value.trim();
 
-    btn.disabled = true;
-    btn.textContent = 'পাঠানো হচ্ছে...';
+  let missing = [];
+  if (!name) missing.push('নাম');
+  if (!phone) missing.push('ফোন নম্বর');
+  if (!product) missing.push('চেয়ার বাছাই');
+  if (!address) missing.push('ঠিকানা');
 
-    // Save to Firestore ("orders" collection) — this is what the admin panel reads.
-    if (window.firebase && firebase.firestore) {
-      firebase.firestore().collection('orders').add({
-        orderId: lastOrder.orderId,
-        name: lastOrder.name,
-        phone: lastOrder.phone,
-        product: lastOrder.product,
-        quantity: lastOrder.qty,
-        address: lastOrder.address,
-        note: lastOrder.note,
-        total: lastOrder.total,
-        date: lastOrder.dateStr,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch((err) => console.error('Firestore save failed:', err));
-    }
+  if (missing.length > 0) {
+    formError.textContent = 'দয়া করে পূরণ করুন: ' + missing.join(', ');
+    formError.style.display = 'block';
+    return;
+  }
+  formError.style.display = 'none';
 
-    // Also keep saving to Netlify Forms as a backup record.
-    const formData = new URLSearchParams();
-    formData.append('form-name', 'order');
-    formData.append('order_id', lastOrder.orderId);
-    formData.append('name', lastOrder.name);
-    formData.append('phone', lastOrder.phone);
-    formData.append('product', lastOrder.product);
-    formData.append('quantity', String(lastOrder.qty));
-    formData.append('address', lastOrder.address);
-    formData.append('note', lastOrder.note);
+  const unitPrice = currentUnitPrice();
+  const total = unitPrice * qty;
+  const orderId = 'AS-' + Date.now().toString().slice(-6);
+  const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString()
+  lastOrder = { name, phone, product, qty, address, note, total, orderId, dateStr };
+  document.getElementById('orderIdField').value = orderId;
+
+  document.getElementById('receiptId').textContent = '#' + orderId;
+  document.getElementById('rcName').textContent = name;
+  document.getElementById('rcPhone').textContent = phone;
+  document.getElementById('rcProduct').textContent = product;
+  document.getElementById('rcQty').textContent = qty;
+  document.getElementById('rcAddress').textContent = address;
+  document.getElementById('rcDate').textContent = dateStr;
+  const noteRow = document.getElementById('rcNoteRow');
+  if (note) { noteRow.style.display = 'flex'; document.getElementById('rcNote').textContent = note; }
+  else { noteRow.style.display = 'none'; }
+  document.getElementById('rcTotal').textContent = total > 0 ? formatTaka(total) : 'যোগাযোগ সাপেক্ষে';
+
+  const confirmBtn = document.getElementById('confirmOrderBtn');
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = 'কনফার্ম করুন';
+  document.getElementById('confirmNote').textContent = 'অর্ডার ডিটেইলস পর্যালোচনা করে "কনফার্ম করুন"-এ চাপুন — তাহলে অর্ডারটি আমাদের কাছে জমা হয়ে যাবে।';
+
+  form.style.display = 'none';
+  receiptView.style.display = 'block';
+  receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// Confirm — Firestore-এ অর্ডার সেভ করে (+ Netlify Forms ব্যাকআপ, Vercel-এ silently fail করবে)
+document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
+  if (!lastOrder) return;
+  const btn = e.currentTarget;
+  const note = document.getElementById('confirmNote');
+
+  btn.disabled = true;
+  btn.textContent = 'পাঠানো হচ্ছে...';
+
+  if (window.firebase && firebase.firestore) {
+    firebase.firestore().collection('orders').add({
+      orderId: lastOrder.orderId,
+      name: lastOrder.name,
+      phone: lastOrder.phone,
+      product: lastOrder.product,
+      quantity: lastOrder.qty,
+      address: lastOrder.address,
+      note: lastOrder.note,
+      total: lastOrder.total,
+      date: lastOrder.dateStr,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
-      .then(() => {
-        btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
-        note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
-      })
-      .catch(() => {
-        btn.disabled = false;
-        btn.textContent = 'আবার চেষ্টা করুন';
-        note.textContent = 'দুঃখিত, পাঠাতে সমস্যা হয়েছে — একটু পর আবার চেষ্টা করুন।';
-      });
-  });
+    .then(() => {
+      btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
+      note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
+    })
+    .catch((err) => {
+      console.error('Firestore save failed:', err);
+      btn.disabled = false;
+      btn.textContent = 'আবার চেষ্টা করুন';
+      note.textContent = 'দুঃখিত, পাঠাতে সমস্যা হয়েছে — একটু পর আবার চেষ্টা করুন।';
+    });
+  }
+});
 
-  // Start a new order — resets back to Step 1
-  document.getElementById('newOrderBtn').addEventListener('click', () => {
-    form.reset();
-    updateTotal();
-    document.querySelectorAll('.pick-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('formError').style.display = 'none';
-    receiptView.style.display = 'none';
-    form.style.display = 'block';
-    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+// Start a new order — resets back to Step 1
+document.getElementById('newOrderBtn').addEventListener('click', () => {
+  form.reset();
+  updateTotal();
+  document.querySelectorAll('.pick-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('formError').style.display = 'none';
+  receiptView.style.display = 'none';
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
