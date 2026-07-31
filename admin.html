@@ -21,54 +21,64 @@
 
 <div id="dashboard">
 
-    <h2>Maamme Admin Dashboard</h2>
-
-    <div class="card">
-      <h3 id="productFormTitle">➕ নতুন প্রোডাক্ট যোগ করুন</h3>
-      <input type="hidden" id="editingProductId" value="">
-
-      <label>প্রোডাক্টের নাম (ছোট, কার্ডে দেখাবে) — যেমন: ডাইনিং চেয়ার</label>
-      <input type="text" id="pName" placeholder="ডাইনিং চেয়ার">
-
-      <label>পুরো নাম (dropdown ও রিসিটে দেখাবে) — যেমন: পাউডার কোটেড ডাইনিং চেয়ার</label>
-      <input type="text" id="pFullName" placeholder="পাউডার কোটেড ডাইনিং চেয়ার">
-
-      <label>ক্যাটাগরি ট্যাগ — যেমন: পাউডার কোটেড কালেকশন</label>
-      <input type="text" id="pTag" placeholder="পাউডার কোটেড কালেকশন">
-
-      <label>বিবরণ (এক লাইনের মতো)</label>
-      <input type="text" id="pDescription" placeholder="সোজা পিঠ, শক্ত বসার জায়গা...">
-
-      <label>দাম (টাকা, শুধু সংখ্যা)</label>
-      <input type="number" id="pPrice" placeholder="4900">
-
-      <label>ছবির path — যেমন: images/chair1.jpeg</label>
-      <input type="text" id="pImage" placeholder="images/chair13.jpeg">
-
-      <label>Slug (ইংরেজি, স্পেস ছাড়া, ইউনিক) — যেমন: segun-dining</label>
-      <input type="text" id="pSlug" placeholder="new-chair-slug">
-
-      <label>ক্রম নম্বর (কালেকশনে কোন পজিশনে দেখাবে)</label>
-      <input type="number" id="pOrder" placeholder="13">
-
-      <button onclick="saveProduct()" id="saveProductBtn">প্রোডাক্ট যোগ করুন</button>
-      <button onclick="cancelEdit()" id="cancelEditBtn" style="background:#999; display:none; margin-top:8px;">বাতিল করুন</button>
-      <p id="productFormMsg" style="font-size:13px; margin-top:8px;"></p>
+    <!-- সবসময় উপরে থাকবে (sticky) — লগআউট বাটন খুঁজতে আর নিচে স্ক্রল করতে হবে না -->
+    <div class="topbar">
+        <h2>Maamme Admin</h2>
+        <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
 
-    <div class="card">
-      <h3>🪑 সব প্রোডাক্ট</h3>
-      <div id="productsList">লোড হচ্ছে...</div>
+    <!-- Orders আর Products আলাদা ট্যাবে — একসাথে সব একই পেজে থাকার দরকার নেই -->
+    <div class="tabs">
+        <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 অর্ডার <span class="count-badge" id="ordersCount"></span></button>
+        <button class="tab-btn" id="tabBtn-products" onclick="switchTab('products')">🪑 প্রোডাক্ট <span class="count-badge" id="productsCount"></span></button>
     </div>
 
-    <div class="card">
-      <h3>📦 Customer Orders</h3>
-      <div id="ordersList">লোড হচ্ছে...</div>
+    <div class="tab-content active" id="tabContent-orders">
+        <div class="card">
+            <h3>📦 Customer Orders</h3>
+            <div id="ordersList">লোড হচ্ছে...</div>
+        </div>
     </div>
 
-    <br>
+    <div class="tab-content" id="tabContent-products">
+        <div class="card">
+            <h3 id="productFormTitle">➕ নতুন প্রোডাক্ট যোগ করুন</h3>
+            <input type="hidden" id="editingProductId" value="">
 
-    <button onclick="logout()">Logout</button>
+            <label>প্রোডাক্টের নাম (ছোট, কার্ডে দেখাবে) — যেমন: ডাইনিং চেয়ার</label>
+            <input type="text" id="pName" placeholder="ডাইনিং চেয়ার">
+
+            <label>পুরো নাম (dropdown ও রিসিটে দেখাবে) — যেমন: পাউডার কোটেড ডাইনিং চেয়ার</label>
+            <input type="text" id="pFullName" placeholder="পাউডার কোটেড ডাইনিং চেয়ার">
+
+            <label>ক্যাটাগরি ট্যাগ — যেমন: পাউডার কোটেড কালেকশন</label>
+            <input type="text" id="pTag" placeholder="পাউডার কোটেড কালেকশন">
+
+            <label>বিবরণ (এক লাইনের মতো)</label>
+            <input type="text" id="pDescription" placeholder="সোজা পিঠ, শক্ত বসার জায়গা...">
+
+            <label>দাম (টাকা, শুধু সংখ্যা)</label>
+            <input type="number" id="pPrice" placeholder="4900">
+
+            <label>ছবির path — যেমন: images/chair1.jpeg</label>
+            <input type="text" id="pImage" placeholder="images/chair13.jpeg">
+
+            <label>Slug (ইংরেজি, স্পেস ছাড়া, ইউনিক) — যেমন: segun-dining</label>
+            <input type="text" id="pSlug" placeholder="new-chair-slug">
+
+            <label>ক্রম নম্বর (কালেকশনে কোন পজিশনে দেখাবে)</label>
+            <input type="number" id="pOrder" placeholder="13">
+
+            <button onclick="saveProduct()" id="saveProductBtn">প্রোডাক্ট যোগ করুন</button>
+            <button onclick="cancelEdit()" id="cancelEditBtn" style="background:#999; display:none; margin-top:8px;">বাতিল করুন</button>
+            <p id="productFormMsg" style="font-size:13px; margin-top:8px;"></p>
+        </div>
+
+        <div class="card">
+            <h3>🪑 সব প্রোডাক্ট</h3>
+            <div id="productsList">লোড হচ্ছে...</div>
+        </div>
+    </div>
 
 </div>
 

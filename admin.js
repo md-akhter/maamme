@@ -22,6 +22,14 @@ function logout() {
   auth.signOut();
 }
 
+// Orders আর Products ট্যাবের মধ্যে সুইচ করে
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tabBtn-' + tab).classList.add('active');
+  document.getElementById('tabContent-' + tab).classList.add('active');
+}
+
 auth.onAuthStateChanged((user) => {
   if (user) {
     document.getElementById("login").style.display = "none";
@@ -45,6 +53,7 @@ function loadOrders() {
 
   db.collection("orders").orderBy("createdAt", "desc").get()
     .then((snapshot) => {
+      document.getElementById('ordersCount').textContent = snapshot.size ? snapshot.size : '';
       if (snapshot.empty) {
         list.innerHTML = "<p>এখনো কোনো অর্ডার নেই।</p>";
         return;
@@ -114,6 +123,7 @@ function loadProducts() {
 
   db.collection("products").orderBy("order", "asc").get()
     .then((snapshot) => {
+      document.getElementById('productsCount').textContent = snapshot.size ? snapshot.size : '';
       if (snapshot.empty) {
         list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
         return;
