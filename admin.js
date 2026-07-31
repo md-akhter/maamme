@@ -1,5 +1,5 @@
 // firebaseConfig ও firebase.initializeApp() এখন firebase-init.js এ আছে (শেয়ার্ড),
-// তাই এখানে আলাদা করে আবার করার দরকার নেই।
+
 
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -48,7 +48,10 @@ function loadOrders() {
       let html = "";
       snapshot.forEach((doc) => {
         const o = doc.data();
+        const id = doc.id;
         const total = o.total ? Number(o.total).toLocaleString('en-IN') : '—';
+        const status = o.status || 'pending';
+
         html += `
           <div class="order-item">
             <div class="order-top"><b>#${o.orderId || ''}</b><span>${o.date || ''}</span></div>
@@ -57,12 +60,43 @@ function loadOrders() {
             <div>${o.address || ''}</div>
             ${o.note ? `<div class="order-note">মন্তব্য: ${o.note}</div>` : ''}
             <div class="order-total">৳ ${total}</div>
+            <div class="status-row">
+              <label>স্ট্যাটাস: </label>
+              <select class="status-select" data-id="${id}">
+                <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                <option value="confirmed" ${status === 'confirmed' ? 'selected' : ''}>✅ Confirmed</option>
+                <option value="delivered" ${status === 'delivered' ? 'selected' : ''}>📦 Delivered</option>
+              </select>
+            </div>
           </div>`;
       });
       list.innerHTML = html;
+
+      // প্রতিটা dropdown-এ change event লাগানো হচ্ছে
+      document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const orderId = e.target.getAttribute('data-id');
+          const newStatus = e.target.value;
+          updateOrderStatus(orderId, newStatus);
+        });
+      });
     })
     .catch((err) => {
       list.innerHTML = "<p>অর্ডার লোড করতে সমস্যা হয়েছে।</p>";
       console.error("Firestore load error:", err);
     });
+}
+
+// Firestore-এ order status আপডেট করে
+function updateOrderStatus(orderId, newStatus) {
+  db.collection("orders").doc(orderId).update({
+    status: newStatus
+  })
+  .then(() => {
+    console.log("Status updated:", orderId, newStatus);
+  })
+  .catch((err) => {
+    alert("Status আপডেট করতে সমস্যা হয়েছে।");
+    console.error("Status update error:", err);
+  });
 }

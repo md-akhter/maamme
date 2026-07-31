@@ -93,3 +93,19 @@
             color:#e91e63;
             margin-top:6px;
         }
+
+        .status-row{
+            margin-top:8px;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+
+        .status-select{
+            padding:5px 8px;
+            margin:0;
+            width:auto;
+            border-radius:5px;
+            border:1px solid #ccc;
+            font-size:13px;
+        }

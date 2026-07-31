@@ -202,6 +202,7 @@
         note: lastOrder.note,
         total: lastOrder.total,
         date: lastOrder.dateStr,
+        status: 'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch((err) => console.error('Firestore save failed:', err));
     }
