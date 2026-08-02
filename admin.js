@@ -18,6 +18,15 @@ function login() {
   // সফল হলে onAuthStateChanged (নিচে) নিজে থেকেই ড্যাশবোর্ড দেখিয়ে দেবে।
 }
 
+// Email বা Password বক্সে থেকে Enter চাপলেই Login হয়ে যাবে, মাউস দিয়ে
+// বাটনে ক্লিক করার দরকার নেই।
+document.getElementById("email").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+document.getElementById("password").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+
 function logout() {
   auth.signOut();
 }
