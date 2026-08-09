@@ -180,12 +180,16 @@ function updateOrderStatus(orderId, newStatus) {
 // Products — Add / Edit / Delete
 // ============================================================
 
+let allProducts = [];
+
 function loadProducts() {
   const list = document.getElementById("productsList");
   list.innerHTML = "লোড হচ্ছে...";
 
   db.collection("products").orderBy("order", "asc").get()
     .then((snapshot) => {
+      allProducts = [];
+      snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
       document.getElementById('productsCount').textContent = snapshot.size ? snapshot.size : '';
       if (snapshot.empty) {
         list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
@@ -306,4 +310,83 @@ function deleteProduct(id) {
       alert("ডিলিট করতে সমস্যা হয়েছে।");
       console.error("Product delete error:", err);
     });
+}
+
+
+// ============================================================
+// Backup — Orders / Products CSV হিসেবে ডাউনলোড (Google Sheets/Excel-এ খোলা যায়)
+// ============================================================
+
+// কোনো ভ্যালুতে কমা/quote/নতুন লাইন থাকলে CSV ফরম্যাটে ঠিকভাবে র‍্যাপ করে
+function csvEscape(value) {
+  const str = (value === undefined || value === null) ? '' : String(value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function rowsToCSV(headers, rows) {
+  const lines = [headers.map(csvEscape).join(',')];
+  rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
+  // শুরুতে UTF-8 BOM (\ufeff) দেওয়া হচ্ছে, নাহলে Excel/Sheets-এ বাংলা লেখা ভাঙাচোরা দেখাতে পারে
+  return '\ufeff' + lines.join('\r\n');
+}
+
+function downloadCSV(filename, csvContent) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+// অর্ডার — তারিখ অনুযায়ী (সবচেয়ে নতুন আগে, যেভাবে Firestore থেকে আনা হয়েছে) CSV হিসেবে ডাউনলোড
+function exportOrdersToCSV() {
+  if (allOrders.length === 0) {
+    alert("ডাউনলোড করার মতো কোনো অর্ডার নেই।");
+    return;
+  }
+  const headers = ['Order ID', 'তারিখ', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
+  const rows = allOrders.map(o => [
+    o.orderId || '',
+    o.date || '',
+    o.name || '',
+    o.phone || '',
+    o.product || '',
+    o.quantity || '',
+    o.address || '',
+    o.note || '',
+    o.total || 0,
+    statusMeta(o.status || 'pending').label
+  ]);
+  downloadCSV(`orders_backup_${todayStr()}.csv`, rowsToCSV(headers, rows));
+}
+
+// প্রোডাক্ট — ক্রম নম্বর অনুযায়ী CSV হিসেবে ডাউনলোড
+function exportProductsToCSV() {
+  if (allProducts.length === 0) {
+    alert("ডাউনলোড করার মতো কোনো প্রোডাক্ট নেই।");
+    return;
+  }
+  const headers = ['Slug', 'নাম', 'পুরো নাম', 'ট্যাগ', 'বিবরণ', 'দাম (৳)', 'ছবি', 'ক্রম'];
+  const rows = allProducts.map(p => [
+    p.slug || p.id || '',
+    p.name || '',
+    p.fullName || '',
+    p.tag || '',
+    p.description || '',
+    p.price || 0,
+    p.image || '',
+    p.order || 0
+  ]);
+  downloadCSV(`products_backup_${todayStr()}.csv`, rowsToCSV(headers, rows));
 }
