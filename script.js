@@ -231,10 +231,7 @@ form.addEventListener('submit', (e) => {
   const unitPrice = currentUnitPrice();
   const total = unitPrice * qty;
   const orderId = 'AS-' + Date.now().toString().slice(-6);
-  // timeZone স্পষ্টভাবে 'Asia/Dhaka' দেওয়া হচ্ছে — কিছু ডিভাইস/ব্রাউজারে (বিশেষ করে
-  // Facebook/Messenger-এর in-app browser) সিস্টেম টাইমজোন ভুলভাবে UTC ধরে, যার ফলে
-  // মধ্যরাতের কাছাকাছি অর্ডার করলে তারিখ ১ দিন পিছিয়ে সেভ হয়ে যেত।
-  const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
+  const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
 
   lastOrder = { name, phone, product, qty, address, note, total, orderId, dateStr };
   document.getElementById('orderIdField').value = orderId;

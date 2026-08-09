@@ -64,8 +64,8 @@ const ORDER_STATUSES = [
   { key: 'pending',   icon: '⏳', label: 'Pending' },
   { key: 'confirmed', icon: '✅', label: 'Confirmed' },
   { key: 'delivered', icon: '📦', label: 'Delivered' },
-  { key: 'cancelled', icon: '❌', label: 'Cancelled' },
-  { key: 'returned',  icon: '↩️', label: 'Returned' }
+  { key: 'cancelled', icon: '❌', label: 'বাতিল' },
+  { key: 'returned',  icon: '↩️', label: 'রিটার্ন' }
 ];
 
 let allOrders = [];      // সব অর্ডার এখানে ক্যাশ থাকে — বারবার Firestore থেকে না এনে filter/count করা যায়
@@ -326,16 +326,6 @@ function csvEscape(value) {
   return str;
 }
 
-// ফোন নম্বরের মতো ভ্যালু (শুরুতে 0 থাকা সংখ্যা) CSV-তে সাধারণভাবে লিখলে
-// Excel সেটাকে নিজের মতো number ধরে নিয়ে শুরুর "0" বাদ দিয়ে দেয় (01712345678 → 1712345678)।
-// এটা ঠেকাতে Excel-এর নিজস্ব ট্রিক ব্যবহার করা হচ্ছে: ="01712345678" — এভাবে লিখলে
-// Excel এটাকে ফর্মুলা হিসেবে ধরে, কিন্তু ফলাফল দেখায় ঠিক টেক্সট আকারে, শুরুর 0 সহ।
-// (Google Sheets-ও এটাকে টেক্সট হিসেবেই দেখায়, তাই ওখানেও সমস্যা হয় না।)
-function excelSafeText(value) {
-  const str = (value === undefined || value === null) ? '' : String(value);
-  return '="' + str.replace(/"/g, '""') + '"';
-}
-
 function rowsToCSV(headers, rows) {
   const lines = [headers.map(csvEscape).join(',')];
   rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
@@ -368,9 +358,9 @@ function exportOrdersToCSV() {
   const headers = ['Order ID', 'তারিখ', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
   const rows = allOrders.map(o => [
     o.orderId || '',
-    excelSafeText(o.date || ''),
+    o.date || '',
     o.name || '',
-    excelSafeText(o.phone || ''),
+    o.phone || '',
     o.product || '',
     o.quantity || '',
     o.address || '',
