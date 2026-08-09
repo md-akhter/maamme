@@ -44,6 +44,18 @@ function formatTaka(n) {
   return '৳ ' + Number(n || 0).toLocaleString('en-IN');
 }
 
+// রিসিটে Order ID দেখানো হয় "#AS-123456" আকারে — কাস্টমার সেখান থেকে কপি করলে
+// "#" চিহ্নটাও চলে আসতে পারে, যেটা Firestore-এ সংরক্ষিত আসল ID-র সাথে মিলবে না।
+// তাই এখানে "#", অতিরিক্ত স্পেস বাদ দেওয়া হচ্ছে, আর case-ও ঠিক করে দেওয়া হচ্ছে।
+// শুধু সংখ্যা টাইপ করলে (AS- ছাড়া) সেটাও সামলে নেওয়া হচ্ছে।
+function normalizeOrderId(raw) {
+  let v = raw.trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+  if (/^\d+$/.test(v)) {
+    v = 'AS-' + v;
+  }
+  return v;
+}
+
 function doSearch() {
   const raw = searchInput.value.trim();
   if (!raw) {
@@ -57,7 +69,7 @@ function doSearch() {
   resultsEl.innerHTML = '';
 
   const field = searchMode === 'orderId' ? 'orderId' : 'phone';
-  const value = searchMode === 'orderId' ? raw.toUpperCase() : raw;
+  const value = searchMode === 'orderId' ? normalizeOrderId(raw) : raw;
 
   db.collection('orders').where(field, '==', value).get()
     .then((snapshot) => {
