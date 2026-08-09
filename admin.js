@@ -368,7 +368,7 @@ function exportOrdersToCSV() {
   const headers = ['Order ID', 'তারিখ', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
   const rows = allOrders.map(o => [
     o.orderId || '',
-    o.date || '',
+    excelSafeText(o.date || ''),
     o.name || '',
     excelSafeText(o.phone || ''),
     o.product || '',
