@@ -186,6 +186,13 @@ if ('IntersectionObserver' in window) {
   revealEls.forEach(el => el.classList.add('in'));
 }
 
+// বাংলাদেশি মোবাইল নম্বর যাচাই — 01 দিয়ে শুরু, ৩য় ডিজিট ৩-৯, মোট ১১ ডিজিট
+// (+880 দিয়ে শুরু হলেও গ্রহণযোগ্য, স্পেস/ড্যাশ থাকলেও চলবে)
+function isValidBdPhone(value) {
+  const cleaned = value.replace(/[\s-]/g, '');
+  return /^(?:\+?880|0)1[3-9]\d{8}$/.test(cleaned);
+}
+
 // Step 1 → Step 2: submitting the form generates the order details / receipt
 const form = document.getElementById('orderForm');
 const receiptView = document.getElementById('receiptView');
@@ -204,7 +211,13 @@ form.addEventListener('submit', (e) => {
 
   let missing = [];
   if (!name) missing.push('নাম');
-  if (!phone) missing.push('ফোন নম্বর');
+  if (!phone) {
+    missing.push('ফোন নম্বর');
+  } else if (!isValidBdPhone(phone)) {
+    formError.textContent = 'সঠিক ফোন নম্বর দিন — যেমন: 01712345678 (১১ ডিজিট, 01 দিয়ে শুরু)';
+    formError.style.display = 'block';
+    return;
+  }
   if (!product) missing.push('চেয়ার বাছাই');
   if (!address) missing.push('ঠিকানা');
 
