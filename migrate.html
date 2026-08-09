@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<title>Product Migration — একবার ব্যবহারের জন্য</title>
+<style>
+  body{font-family:Arial,sans-serif; max-width:600px; margin:60px auto; padding:0 20px;}
+  button{padding:14px 24px; font-size:16px; background:#e91e63; color:#fff; border:none; border-radius:6px; cursor:pointer;}
+  button:disabled{background:#aaa;}
+  #log{margin-top:20px; white-space:pre-line; font-family:monospace; font-size:13px; background:#f5f5f5; padding:15px; border-radius:6px; min-height:100px;}
+</style>
+</head>
+<body>
+
+<h2>🚀 পুরনো ১২টা প্রোডাক্ট Firestore-এ পাঠানো</h2>
+<p>এই বাটনে <b>একবার মাত্র</b> চাপুন। কাজ শেষ হলে এই ফাইলটা GitHub থেকে ডিলিট করে দিন।</p>
+<button id="runBtn" onclick="migrate()">প্রোডাক্ট মাইগ্রেট করুন</button>
+<div id="log">এখনো শুরু হয়নি...</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-init.js"></script>
+
+<script>
+const products = [
+  {slug:'segun-dining', tag:'পাউডার কোটেড কালেকশন', name:'ডাইনিং চেয়ার', fullName:'পাউডার কোটেড ডাইনিং চেয়ার', description:'সোজা পিঠ, শক্ত বসার জায়গা — প্রতিদিনের খাবার টেবিলের জন্য আদর্শ।', price:4900, image:'images/chair1.jpeg', order:1},
+  {slug:'mehogoni-armchair', tag:'ক্রোম কালেকশন', name:'আর্মচেয়ার', fullName:'ক্রোম ফিনিশ আর্মচেয়ার', description:'দুই পাশে হাতল, বসতে আরামদায়ক — বসার ঘর বা পড়ার কোণের জন্য।', price:7500, image:'images/chair2.jpeg', order:2},
+  {slug:'raintree-rocking', tag:'স্টেইনলেস স্টিল কালেকশন', name:'রকিং চেয়ার', fullName:'স্টেইনলেস স্টিল রকিং চেয়ার', description:'মৃদু দোলনা, প্রশস্ত বসার জায়গা — বারান্দা বা বেডরুম কোণের জন্য উপযুক্ত।', price:9200, image:'images/chair3.jpeg', order:3},
+  {slug:'cane-accent', tag:'মেশ কালেকশন', name:'অ্যাকসেন্ট চেয়ার', fullName:'মেশ অ্যাকসেন্ট চেয়ার', description:'হালকা কাঠামো, breathable মেশ ডিজাইন — বারান্দা বা কর্নার সাজানোর জন্য।', price:3800, image:'images/chair4.jpeg', order:4},
+  {slug:'segun-office', tag:'পাউডার কোটেড কালেকশন', name:'অফিস চেয়ার', fullName:'পাউডার কোটেড অফিস চেয়ার', description:'ঘোরানো বেস ও উচ্চতা সমন্বয়যোগ্য — কাজের ডেস্কের জন্য আরামদায়ক বসা।', price:6200, image:'images/chair5.jpeg', order:5},
+  {slug:'mehogoni-dining-set', tag:'ক্রোম কালেকশন', name:'ডাইনিং সেট চেয়ার', fullName:'ক্রোম ফিনিশ ডাইনিং সেট চেয়ার', description:'সরু ব্যাক-স্ল্যাট ডিজাইন — ডাইনিং সেটে মিলিয়ে অর্ডার করার জন্য জনপ্রিয়।', price:5400, image:'images/chair6.jpeg', order:6},
+  {slug:'raintree-lounge', tag:'স্টেইনলেস স্টিল কালেকশন', name:'লাউঞ্জ চেয়ার', fullName:'স্টেইনলেস স্টিল লাউঞ্জ চেয়ার', description:'গভীর ও প্রশস্ত বসার জায়গা, বাঁকানো ব্যাকরেস্ট — রিল্যাক্সের জন্য আদর্শ।', price:8700, image:'images/chair7.jpeg', order:7},
+  {slug:'cane-bar-stool', tag:'মেশ কালেকশন', name:'বার স্টুল', fullName:'মেশ বার স্টুল', description:'উঁচু কাউন্টার বা কিচেন আইল্যান্ডের জন্য উপযুক্ত, হালকা ও সহজে সরানো যায়।', price:3200, image:'images/chair8.jpeg', order:8},
+  {slug:'segun-folding', tag:'পাউডার কোটেড কালেকশন', name:'ফোল্ডিং চেয়ার', fullName:'পাউডার কোটেড ফোল্ডিং চেয়ার', description:'ভাঁজ করে সহজে রাখা যায় — অতিরিক্ত মেহমান বা ছোট জায়গার জন্য উপযোগী।', price:2600, image:'images/chair9.jpeg', order:9},
+  {slug:'mehogoni-kids', tag:'ক্রোম কালেকশন', name:'কিডস চেয়ার', fullName:'ক্রোম ফিনিশ কিডস চেয়ার', description:'ছোট মাপে গড়া, গোল কোণ — শিশুদের পড়ার টেবিল বা খাবার টেবিলের জন্য।', price:2100, image:'images/chair10.jpeg', order:10},
+  {slug:'raintree-garden', tag:'স্টেইনলেস স্টিল কালেকশন', name:'গার্ডেন চেয়ার', fullName:'স্টেইনলেস স্টিল গার্ডেন চেয়ার', description:'আবহাওয়া-সহনশীল ফিনিশ — বারান্দা বা ছাদবাগানে রাখার জন্য উপযুক্ত।', price:4300, image:'images/chair11.jpeg', order:11},
+  {slug:'segun-wedding', tag:'পাউডার কোটেড কালেকশন', name:'ওয়েডিং / স্টেজ চেয়ার', fullName:'পাউডার কোটেড ওয়েডিং/স্টেজ চেয়ার', description:'সরু কাঠামো, উঁচু ব্যাকরেস্ট — অনুষ্ঠান বা স্টেজ সাজানোর জন্য জনপ্রিয়।', price:3500, image:'images/chair12.jpeg', order:12}
+];
+
+async function migrate() {
+  const btn = document.getElementById('runBtn');
+  const log = document.getElementById('log');
+  btn.disabled = true;
+  log.textContent = 'শুরু হচ্ছে...\n';
+
+  const db = firebase.firestore();
+
+  for (const p of products) {
+    try {
+      await db.collection('products').doc(p.slug).set(p);
+      log.textContent += `✅ ${p.name} যোগ হয়েছে\n`;
+    } catch (err) {
+      log.textContent += `❌ ${p.name} ব্যর্থ: ${err.message}\n`;
+    }
+  }
+
+  log.textContent += '\n🎉 সব শেষ! এবার এই migrate.html ফাইলটা GitHub থেকে ডিলিট করে দিন এবং Firestore Rules প্রোডাকশন rules-এ পাল্টে দিন।';
+  btn.textContent = 'হয়ে গেছে ✓';
+}
+</script>
+
+</body>
+</html>

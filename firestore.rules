@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // প্রোডাক্ট — সবাই পড়তে পারবে (ওয়েবসাইটে দেখানোর জন্য),
+    // কিন্তু শুধু লগইন করা admin লিখতে/এডিট/ডিলিট করতে পারবে
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // অর্ডার — যেকোনো কাস্টমার নতুন অর্ডার তৈরি (create) করতে পারবে,
+    // read করতে পারবে track.html-এর জন্য (orderId/phone দিয়ে খোঁজার সময়),
+    // কিন্তু শুধু admin স্ট্যাটাস আপডেট (update/delete) করতে পারবে।
+    //
+    // নোট: এই rule অনুযায়ী orders collection টেকনিক্যালি "public read" —
+    // অর্থাৎ কেউ যদি সরাসরি Firestore API কল করে, সে সব অর্ডার লিস্ট করতে পারবে।
+    // এখানে কোনো পাসওয়ার্ড/পেমেন্ট তথ্য নেই বলে ছোট ব্যবসার জন্য এটা সাধারণত
+    // গ্রহণযোগ্য ঝুঁকি। পুরোপুরি লক করতে চাইলে ভবিষ্যতে একটা Cloud Function
+    // দিয়ে ট্র্যাকিং query চালানো যায় — সেক্ষেত্রে read: if request.auth != null করে দিন।
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if request.auth != null;
+    }
+  }
+}

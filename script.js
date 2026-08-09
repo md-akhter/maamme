@@ -271,6 +271,7 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
     .then(() => {
       btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
       note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
+      document.getElementById('trackHint').style.display = 'block';
     })
     .catch((err) => {
       console.error('Firestore save failed:', err);

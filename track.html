@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>অর্ডার ট্র্যাক করুন — MAAMME.COM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="style.css">
+<style>
+  /* শুধু ট্র্যাকিং পেজের জন্য কিছু ছোট addition — বাকি সব style.css থেকে আসছে */
+  .track-section{background:var(--walnut-950); color:var(--text-light); min-height:100vh; padding:56px 0;}
+  .track-top{max-width:520px; margin:0 auto 32px; text-align:center;}
+  .track-top .logo-link{display:inline-block; margin-bottom:22px;}
+  .track-top h1{font-size:clamp(26px,4vw,34px); font-weight:500; margin:0 0 10px;}
+  .track-top p{font-size:14.5px; color:rgba(246,239,223,0.75); line-height:1.7;}
+
+  .track-box{max-width:520px; margin:0 auto;}
+  .method-tabs{display:flex; gap:8px; margin-bottom:20px;}
+  .method-tab{
+    flex:1; padding:11px; font-size:13.5px; text-align:center; cursor:pointer;
+    border:1px solid var(--line-light); border-radius:2px; color:rgba(246,239,223,0.7);
+    transition:all .2s ease; background:transparent; user-select:none;
+  }
+  .method-tab.active{background:var(--brass); color:var(--walnut-950); border-color:var(--brass); font-weight:600;}
+
+  .track-form-row{display:flex; gap:10px;}
+  .track-form-row .field{flex:1; margin-bottom:0;}
+  .track-btn{
+    background:var(--brass); color:var(--walnut-950); border:1px solid var(--brass);
+    padding:0 22px; font-size:14.5px; font-weight:600; border-radius:2px; cursor:pointer;
+    white-space:nowrap; transition:background .2s ease;
+  }
+  .track-btn:hover{background:var(--brass-bright);}
+  .track-btn:disabled{opacity:.6; cursor:default;}
+
+  .track-msg{font-size:13.5px; margin-top:14px; text-align:center; color:rgba(246,239,223,0.75); display:none;}
+  .track-msg.show{display:block;}
+  .track-msg.error{color:#e0a58c;}
+
+  .results{margin-top:28px; display:flex; flex-direction:column; gap:16px;}
+
+  .order-card{
+    background:var(--ivory); color:var(--text-dark); border-radius:2px;
+    padding:24px; border:1px solid var(--line-light); position:relative;
+  }
+  .order-card .receipt-id{
+    font-family:'Fraunces',serif; font-style:italic; font-size:13px; color:var(--brass);
+    border:1px solid var(--line); padding:5px 12px; border-radius:2px; display:inline-block; margin-bottom:16px;
+  }
+  .status-track{display:flex; align-items:center; margin:18px 0 22px;}
+  .status-step{flex:1; text-align:center; position:relative;}
+  .status-step .dot{
+    width:24px; height:24px; border-radius:50%; background:var(--ivory-dim); border:2px solid var(--line);
+    margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:12px;
+    position:relative; z-index:2;
+  }
+  .status-step .lbl{font-size:11px; color:#8a7860; letter-spacing:0.02em;}
+  .status-step::before{
+    content:''; position:absolute; top:11px; left:-50%; width:100%; height:2px; background:var(--line); z-index:1;
+  }
+  .status-step:first-child::before{display:none;}
+  .status-step.done .dot{background:var(--sage); border-color:var(--sage); color:#fff;}
+  .status-step.done .lbl{color:var(--sage); font-weight:600;}
+  .status-step.done::before{background:var(--sage);}
+  .status-step.current .dot{background:var(--brass); border-color:var(--brass); color:var(--walnut-950); font-weight:700;}
+  .status-step.current .lbl{color:var(--walnut-950); font-weight:600;}
+
+  .order-card .receipt-rows{border-top:1px solid var(--line);}
+  .track-msg a{color:var(--brass-bright);}
+  .track-back{display:block; text-align:center; margin-top:26px; font-size:13.5px; color:rgba(246,239,223,0.6); text-decoration:none;}
+  .track-back:hover{color:var(--brass-bright);}
+
+  @media (max-width:560px){
+    .track-form-row{flex-direction:column;}
+    .track-btn{padding:12px; width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<section class="track-section">
+  <div class="wrap">
+
+    <div class="track-top">
+      <a href="index.html#" class="logo-link"><img src="images/logo_pic.jpeg" width="120" height="50" alt="MAAMME.COM"></a>
+      <h1>আপনার অর্ডার ট্র্যাক করুন</h1>
+      <p>অর্ডার আইডি অথবা যে ফোন নম্বর দিয়ে অর্ডার করেছিলেন, সেটা দিয়ে বর্তমান স্ট্যাটাস দেখুন।</p>
+    </div>
+
+    <div class="track-box">
+
+      <div class="method-tabs">
+        <div class="method-tab active" id="tabOrderId" onclick="switchMethod('orderId')">🔎 Order ID দিয়ে</div>
+        <div class="method-tab" id="tabPhone" onclick="switchMethod('phone')">📱 ফোন নম্বর দিয়ে</div>
+      </div>
+
+      <div class="track-form-row">
+        <div class="field no-label">
+          <input type="text" id="searchInput" placeholder="যেমন: AS-123456">
+        </div>
+        <button class="track-btn" id="searchBtn" onclick="doSearch()">খুঁজুন</button>
+      </div>
+
+      <div class="track-msg" id="trackMsg"></div>
+
+      <div class="results" id="results"></div>
+
+      <a href="index.html#order" class="track-back">← হোমপেজে ফিরে যান</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-init.js"></script>
+<script src="track.js"></script>
+
+</body>
+</html>
