@@ -56,51 +56,31 @@ auth.onAuthStateChanged((user) => {
 // Customer Orders — লোড ও status আপডেট
 // ============================================================
 
+// ============================================================
+// Customer Orders — লোড, স্ট্যাটাস আপডেট, ফিল্টার ও কাউন্ট সামারি
+// ============================================================
+
+const ORDER_STATUSES = [
+  { key: 'pending',   icon: '⏳', label: 'Pending' },
+  { key: 'confirmed', icon: '✅', label: 'Confirmed' },
+  { key: 'delivered', icon: '📦', label: 'Delivered' },
+  { key: 'cancelled', icon: '❌', label: 'বাতিল' },
+  { key: 'returned',  icon: '↩️', label: 'রিটার্ন' }
+];
+
+let allOrders = [];      // সব অর্ডার এখানে ক্যাশ থাকে — বারবার Firestore থেকে না এনে filter/count করা যায়
+let currentFilter = 'all';
+
 function loadOrders() {
   const list = document.getElementById("ordersList");
   list.innerHTML = "লোড হচ্ছে...";
 
   db.collection("orders").orderBy("createdAt", "desc").get()
     .then((snapshot) => {
-      document.getElementById('ordersCount').textContent = snapshot.size ? snapshot.size : '';
-      if (snapshot.empty) {
-        list.innerHTML = "<p>এখনো কোনো অর্ডার নেই।</p>";
-        return;
-      }
-      let html = "";
-      snapshot.forEach((doc) => {
-        const o = doc.data();
-        const id = doc.id;
-        const total = o.total ? Number(o.total).toLocaleString('en-IN') : '—';
-        const status = o.status || 'pending';
-
-        html += `
-          <div class="order-item">
-            <div class="order-top"><b>#${o.orderId || ''}</b><span>${o.date || ''}</span></div>
-            <div>${o.name || ''} — ${o.phone || ''}</div>
-            <div>${o.product || ''} × ${o.quantity || ''}</div>
-            <div>${o.address || ''}</div>
-            ${o.note ? `<div class="order-note">মন্তব্য: ${o.note}</div>` : ''}
-            <div class="order-total">৳ ${total}</div>
-            <div class="status-row">
-              <label>স্ট্যাটাস: </label>
-              <select class="status-select" data-id="${id}">
-                <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
-                <option value="confirmed" ${status === 'confirmed' ? 'selected' : ''}>✅ Confirmed</option>
-                <option value="delivered" ${status === 'delivered' ? 'selected' : ''}>📦 Delivered</option>
-              </select>
-            </div>
-          </div>`;
-      });
-      list.innerHTML = html;
-
-      document.querySelectorAll('.status-select').forEach(select => {
-        select.addEventListener('change', (e) => {
-          const orderId = e.target.getAttribute('data-id');
-          const newStatus = e.target.value;
-          updateOrderStatus(orderId, newStatus);
-        });
-      });
+      allOrders = [];
+      snapshot.forEach((doc) => allOrders.push({ id: doc.id, ...doc.data() }));
+      document.getElementById('ordersCount').textContent = allOrders.length ? allOrders.length : '';
+      renderOrders();
     })
     .catch((err) => {
       list.innerHTML = "<p>অর্ডার লোড করতে সমস্যা হয়েছে।</p>";
@@ -108,12 +88,86 @@ function loadOrders() {
     });
 }
 
+function statusMeta(key) {
+  return ORDER_STATUSES.find(s => s.key === key) || ORDER_STATUSES[0];
+}
+
+// ক্যাশ করা allOrders থেকেই stats bar + filtered লিস্ট বানায় — কোনো নতুন Firestore কল লাগে না
+function renderOrders() {
+  const list = document.getElementById("ordersList");
+
+  if (allOrders.length === 0) {
+    list.innerHTML = "<p>এখনো কোনো অর্ডার নেই।</p>";
+    return;
+  }
+
+  const counts = { all: allOrders.length };
+  ORDER_STATUSES.forEach(s => counts[s.key] = 0);
+  allOrders.forEach(o => {
+    const st = o.status || 'pending';
+    counts[st] = (counts[st] || 0) + 1;
+  });
+
+  let statsHtml = '<div class="stats-bar">';
+  statsHtml += `<div class="stat-chip ${currentFilter === 'all' ? 'active' : ''}" data-key="all">সব <span class="stat-count">${counts.all}</span></div>`;
+  ORDER_STATUSES.forEach(s => {
+    statsHtml += `<div class="stat-chip ${currentFilter === s.key ? 'active' : ''}" data-key="${s.key}">${s.icon} ${s.label} <span class="stat-count">${counts[s.key] || 0}</span></div>`;
+  });
+  statsHtml += '</div>';
+
+  const filtered = currentFilter === 'all' ? allOrders : allOrders.filter(o => (o.status || 'pending') === currentFilter);
+
+  let itemsHtml = '';
+  if (filtered.length === 0) {
+    itemsHtml = '<p style="padding:10px 0;">এই স্ট্যাটাসে কোনো অর্ডার নেই।</p>';
+  } else {
+    filtered.forEach((o) => {
+      const total = o.total ? Number(o.total).toLocaleString('en-IN') : '—';
+      const status = o.status || 'pending';
+      itemsHtml += `
+        <div class="order-item status-${status}">
+          <div class="order-top"><b>#${o.orderId || ''}</b><span>${o.date || ''}</span></div>
+          <div>${o.name || ''} — ${o.phone || ''}</div>
+          <div>${o.product || ''} × ${o.quantity || ''}</div>
+          <div>${o.address || ''}</div>
+          ${o.note ? `<div class="order-note">মন্তব্য: ${o.note}</div>` : ''}
+          <div class="order-total">৳ ${total}</div>
+          <div class="status-row">
+            <label>স্ট্যাটাস: </label>
+            <select class="status-select" data-id="${o.id}">
+              ${ORDER_STATUSES.map(s => `<option value="${s.key}" ${status === s.key ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
+            </select>
+          </div>
+        </div>`;
+    });
+  }
+
+  list.innerHTML = statsHtml + itemsHtml;
+
+  document.querySelectorAll('.stat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      currentFilter = chip.getAttribute('data-key');
+      renderOrders();
+    });
+  });
+
+  document.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', (e) => {
+      const orderId = e.target.getAttribute('data-id');
+      const newStatus = e.target.value;
+      updateOrderStatus(orderId, newStatus);
+    });
+  });
+}
+
 function updateOrderStatus(orderId, newStatus) {
   db.collection("orders").doc(orderId).update({
     status: newStatus
   })
   .then(() => {
-    console.log("Status updated:", orderId, newStatus);
+    const o = allOrders.find(x => x.id === orderId);
+    if (o) o.status = newStatus;
+    renderOrders(); // কাউন্ট/ফিল্টার নতুন করে রিফ্রেশ হয়, আবার Firestore থেকে আনার দরকার নেই
   })
   .catch((err) => {
     alert("Status আপডেট করতে সমস্যা হয়েছে।");

@@ -193,3 +193,50 @@
         .delete-btn:hover{
             background:#992d22;
         }
+
+        .stats-bar{
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            margin-bottom:16px;
+        }
+
+        .stat-chip{
+            padding:7px 14px;
+            border-radius:20px;
+            border:1px solid #ddd;
+            background:#fafafa;
+            font-size:13px;
+            cursor:pointer;
+            user-select:none;
+            transition:all .15s ease;
+            color:#555;
+        }
+
+        .stat-chip:hover{
+            border-color:#e91e63;
+        }
+
+        .stat-chip.active{
+            background:#e91e63;
+            border-color:#e91e63;
+            color:#fff;
+        }
+
+        .stat-count{
+            font-weight:bold;
+        }
+
+        .order-item.status-cancelled{
+            border-left:4px solid #c0392b;
+            background:#fdf3f2;
+        }
+
+        .order-item.status-returned{
+            border-left:4px solid #d68910;
+            background:#fdf6ec;
+        }
+
+        .order-item.status-delivered{
+            border-left:4px solid #2e7d32;
+        }

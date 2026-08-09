@@ -102,6 +102,31 @@ function doSearch() {
 
 function renderOrderCard(o) {
   const status = o.status || 'pending';
+
+  // বাতিল বা রিটার্ন হলে ধাপে-ধাপে stepper না দেখিয়ে স্পষ্ট একটা ব্যানার দেখানো হচ্ছে —
+  // এই দুটো "লিনিয়ার" progress-এর অংশ না, তাই স্টেপার দেখালে বিভ্রান্তিকর হবে।
+  if (status === 'cancelled' || status === 'returned') {
+    const isCancelled = status === 'cancelled';
+    const bannerClass = isCancelled ? 'cancelled' : 'returned';
+    const bannerText = isCancelled ? '❌ এই অর্ডারটি বাতিল করা হয়েছে' : '↩️ এই অর্ডারটি রিটার্ন করা হয়েছে';
+
+    return `
+      <div class="order-card">
+        <div class="receipt-id">#${o.orderId || ''}</div>
+        <div class="status-banner ${bannerClass}">${bannerText}</div>
+        <div class="receipt-rows">
+          <div class="receipt-row"><span>প্রোডাক্ট</span><b>${o.product || ''}</b></div>
+          <div class="receipt-row"><span>পরিমাণ</span><b>${o.quantity || ''}</b></div>
+          <div class="receipt-row"><span>এলাকা</span><b>${o.address || ''}</b></div>
+          <div class="receipt-row"><span>তারিখ</span><b>${o.date || ''}</b></div>
+        </div>
+        <div class="receipt-total">
+          <span>সর্বমোট</span>
+          <b>${formatTaka(o.total)}</b>
+        </div>
+      </div>`;
+  }
+
   const currentIndex = STATUS_STEPS.findIndex(s => s.key === status);
 
   const stepsHtml = STATUS_STEPS.map((s, i) => {
