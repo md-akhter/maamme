@@ -240,3 +240,39 @@
         .order-item.status-delivered{
             border-left:4px solid #2e7d32;
         }
+
+        /* ছোট স্ক্রিন (মোবাইল) — লগইন বক্স, ট্যাব আর স্ট্যাটাস চিপগুলো এলোমেলো/ওভারফ্লো
+           না হয়ে সুন্দরভাবে সাজানো থাকার জন্য */
+        @media (max-width:480px){
+            .login-box{
+                width:90%;
+                margin:60px auto;
+                padding:24px;
+            }
+
+            .tabs{
+                padding:12px 14px 0 14px;
+                gap:6px;
+            }
+
+            .tab-btn{
+                font-size:13px;
+                padding:10px 4px;
+            }
+
+            .tab-content{
+                padding:14px 14px 24px 14px;
+            }
+
+            .stats-bar{
+                display:grid;
+                grid-template-columns:repeat(2,1fr);
+                gap:8px;
+            }
+
+            .stat-chip{
+                text-align:center;
+                padding:9px 6px;
+                font-size:12.5px;
+            }
+        }
