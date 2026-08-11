@@ -4,8 +4,50 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ============================================================
-// Login / Logout
+// Login / Logout — Email+Password + নতুন ডিভাইসে Email Link ভেরিফিকেশন
 // ============================================================
+//
+// যেভাবে কাজ করে:
+// ১) Email + Password দিয়ে সাধারণভাবে লগইন করা হয়।
+// ২) এই ব্রাউজার/ডিভাইসটা আগে ভেরিফাই করা ("trusted") না থাকলে, সাথে সাথে
+//    সাইন-আউট করে দিয়ে admin-এর email-এ একটা ভেরিফিকেশন লিংক পাঠানো হয়।
+// ৩) সেই লিংকে ক্লিক করলে এই ডিভাইসটা "trusted" হিসেবে চিহ্নিত হয়ে যায়
+//    (ব্রাউজারের localStorage-এ সেভ থাকে) — তারপর থেকে এই ডিভাইসে শুধু
+//    email+password দিয়েই ঢোকা যাবে, বারবার লিংক লাগবে না।
+// ৪) ব্রাউজারের history/cookie/localStorage মুছে ফেললে আবার নতুন ডিভাইস
+//    হিসেবে গণ্য হবে এবং আবার ভেরিফাই করতে হবে।
+
+const TRUSTED_DEVICE_KEY = 'maamme_admin_trusted_device';
+const PENDING_EMAIL_KEY  = 'maamme_admin_pending_email';
+
+function isTrustedDevice() {
+  return window.localStorage.getItem(TRUSTED_DEVICE_KEY) === 'yes';
+}
+function markDeviceTrusted() {
+  window.localStorage.setItem(TRUSTED_DEVICE_KEY, 'yes');
+}
+
+const emailLinkSettings = {
+  url: window.location.origin + window.location.pathname,
+  handleCodeInApp: true
+};
+
+function showLoginForm() {
+  document.getElementById("login").style.display = "block";
+  document.getElementById("pendingVerify").style.display = "none";
+  document.getElementById("dashboard").style.display = "none";
+}
+function showPendingVerify(email) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("pendingVerify").style.display = "block";
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("pendingVerifyEmail").textContent = email;
+}
+function showDashboard() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("pendingVerify").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+}
 
 function login() {
   let email = document.getElementById("email").value;
@@ -15,7 +57,35 @@ function login() {
     .catch((error) => {
       alert("লগইন ব্যর্থ হয়েছে: " + error.message);
     });
-  // সফল হলে onAuthStateChanged (নিচে) নিজে থেকেই ড্যাশবোর্ড দেখিয়ে দেবে।
+  // সফল হলে onAuthStateChanged (নিচে) বাকিটা সামলাবে —
+  // trusted device হলে dashboard, না হলে verification link পাঠাবে।
+}
+
+// ইমেইলে পাঠানো ভেরিফিকেশন লিংকে ক্লিক করে পেজে ফিরলে এই কোড সেটা সামলায়
+if (auth.isSignInWithEmailLink(window.location.href)) {
+  let savedEmail = window.localStorage.getItem(PENDING_EMAIL_KEY);
+  if (!savedEmail) {
+    savedEmail = window.prompt('ভেরিফিকেশন সম্পন্ন করতে আপনার admin email দিন:');
+  }
+  auth.signInWithEmailLink(savedEmail, window.location.href)
+    .then(() => {
+      markDeviceTrusted();
+      window.localStorage.removeItem(PENDING_EMAIL_KEY);
+      // URL থেকে ভেরিফিকেশন কোড/প্যারামিটার সরিয়ে ঠিকানা পরিষ্কার রাখা হচ্ছে
+      window.history.replaceState({}, document.title, window.location.pathname);
+      showDashboard();
+      loadOrders();
+      loadProducts();
+    })
+    .catch((error) => {
+      alert("ভেরিফিকেশন লিংক অবৈধ বা মেয়াদোত্তীর্ণ, আবার লগইন করে নতুন লিংক নিন: " + error.message);
+      showLoginForm();
+    });
+}
+
+function cancelPendingVerify() {
+  auth.signOut();
+  showLoginForm();
 }
 
 // Email বা Password বক্সে থেকে Enter চাপলেই Login হয়ে যাবে, মাউস দিয়ে
@@ -28,6 +98,7 @@ document.getElementById("password").addEventListener("keydown", (e) => {
 });
 
 function logout() {
+  window.localStorage.removeItem(PENDING_EMAIL_KEY);
   auth.signOut();
 }
 
@@ -41,13 +112,30 @@ function switchTab(tab) {
 
 auth.onAuthStateChanged((user) => {
   if (user) {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    loadOrders();
-    loadProducts();
+    if (isTrustedDevice()) {
+      showDashboard();
+      loadOrders();
+      loadProducts();
+    } else {
+      // পাসওয়ার্ড ঠিক আছে, কিন্তু এই ডিভাইসটা আগে ভেরিফাই করা হয়নি —
+      // সাথে সাথে সাইন-আউট করে ভেরিফিকেশন লিংক পাঠানো হচ্ছে।
+      const email = user.email;
+      auth.signOut()
+        .then(() => auth.sendSignInLinkToEmail(email, emailLinkSettings))
+        .then(() => {
+          window.localStorage.setItem(PENDING_EMAIL_KEY, email);
+          showPendingVerify(email);
+        })
+        .catch((error) => {
+          alert("ভেরিফিকেশন লিংক পাঠাতে সমস্যা হয়েছে: " + error.message);
+          showLoginForm();
+        });
+    }
   } else {
-    document.getElementById("login").style.display = "block";
-    document.getElementById("dashboard").style.display = "none";
+    // pendingVerify স্ক্রিন দেখানো অবস্থায় থাকলে সেটা যেন হঠাৎ লগইন ফর্মে বদলে না যায়
+    if (document.getElementById("pendingVerify").style.display !== "block") {
+      showLoginForm();
+    }
   }
 });
 
@@ -368,7 +456,7 @@ function exportOrdersToCSV() {
   const headers = ['Order ID', 'তারিখ', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
   const rows = allOrders.map(o => [
     o.orderId || '',
-    excelSafeText(o.date || ''),
+    o.date || '',
     o.name || '',
     excelSafeText(o.phone || ''),
     o.product || '',
