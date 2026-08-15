@@ -18,6 +18,12 @@ const STATUS_STEPS = [
   { key: 'delivered', label: 'Delivered', icon: '📦' }
 ];
 
+const COMPLAINT_STATUS_LABELS = {
+  new:      { icon: '🆕', label: 'অভিযোগ জমা হয়েছে', cls: 'new' },
+  progress: { icon: '⏳', label: 'অভিযোগ দেখা হচ্ছে', cls: 'progress' },
+  resolved: { icon: '✅', label: 'অভিযোগ সমাধান হয়েছে', cls: 'resolved' }
+};
+
 function switchMethod(mode) {
   searchMode = mode;
   document.getElementById('tabOrderId').classList.toggle('active', mode === 'orderId');
@@ -103,7 +109,28 @@ function doSearch() {
         return bt - at;
       });
 
-      resultsEl.innerHTML = orders.map(renderOrderCard).join('');
+      // এই অর্ডারগুলোর কোনোটাতে অভিযোগ থাকলে সেটাও একসাথে এনে card-এ দেখানো হচ্ছে,
+      // যাতে কাস্টমারকে আলাদা করে অভিযোগ ট্র্যাক করতে না হয়
+      const orderIds = [...new Set(orders.map(o => o.orderId).filter(Boolean))];
+      if (orderIds.length === 0) {
+        resultsEl.innerHTML = orders.map(o => renderOrderCard(o, null)).join('');
+        return;
+      }
+
+      return db.collection('complaints').where('orderId', 'in', orderIds.slice(0, 10)).get()
+        .then((complaintSnap) => {
+          // একই order-এ একাধিক অভিযোগ থাকলে সবচেয়ে নতুনটা দেখানো হচ্ছে
+          const complaintMap = {};
+          complaintSnap.forEach(doc => {
+            const c = doc.data();
+            const existing = complaintMap[c.orderId];
+            const ct = c.createdAt && c.createdAt.toMillis ? c.createdAt.toMillis() : 0;
+            const et = existing && existing.createdAt && existing.createdAt.toMillis ? existing.createdAt.toMillis() : -1;
+            if (!existing || ct > et) complaintMap[c.orderId] = c;
+          });
+
+          resultsEl.innerHTML = orders.map(o => renderOrderCard(o, complaintMap[o.orderId] || null)).join('');
+        });
     })
     .catch((err) => {
       searchBtn.disabled = false;
@@ -113,8 +140,9 @@ function doSearch() {
     });
 }
 
-function renderOrderCard(o) {
+function renderOrderCard(o, complaint) {
   const status = o.status || 'pending';
+  const complaintBadgeHtml = renderComplaintBadge(complaint);
 
   // বাতিল বা রিটার্ন হলে ধাপে-ধাপে stepper না দেখিয়ে স্পষ্ট একটা ব্যানার দেখানো হচ্ছে —
   // এই দুটো "লিনিয়ার" progress-এর অংশ না, তাই স্টেপার দেখালে বিভ্রান্তিকর হবে।
@@ -137,6 +165,7 @@ function renderOrderCard(o) {
           <span>সর্বমোট</span>
           <b>${formatTaka(o.total)}</b>
         </div>
+        ${complaintBadgeHtml}
       </div>`;
   }
 
@@ -167,5 +196,16 @@ function renderOrderCard(o) {
         <span>সর্বমোট</span>
         <b>${formatTaka(o.total)}</b>
       </div>
+      ${complaintBadgeHtml}
+    </div>`;
+}
+
+// এই order-এ কোনো অভিযোগ থাকলে সেটার status ছোট একটা badge আকারে দেখায়
+function renderComplaintBadge(complaint) {
+  if (!complaint) return '';
+  const meta = COMPLAINT_STATUS_LABELS[complaint.status] || COMPLAINT_STATUS_LABELS.new;
+  return `
+    <div class="complaint-badge-row">
+      <span class="complaint-badge ${meta.cls}">${meta.icon} ${meta.label}</span>
     </div>`;
 }
