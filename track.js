@@ -44,6 +44,19 @@ function formatTaka(n) {
   return '৳ ' + Number(n || 0).toLocaleString('en-IN');
 }
 
+// অর্ডারের নাম/ঠিকানা/মন্তব্য কাস্টমার নিজে টাইপ করে, আর এই পেজটা পাবলিক —
+// তাই innerHTML-এ বসানোর আগে escape করা হচ্ছে, নাহলে কেউ HTML/script ঢুকিয়ে
+// অর্ডার করলে এই ট্র্যাকিং পেজে সেটা চালু হয়ে যেতে পারে।
+function escapeHtml(value) {
+  const str = (value === undefined || value === null) ? '' : String(value);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // রিসিটে Order ID দেখানো হয় "#AS-123456" আকারে — কাস্টমার সেখান থেকে কপি করলে
 // "#" চিহ্নটাও চলে আসতে পারে, যেটা Firestore-এ সংরক্ষিত আসল ID-র সাথে মিলবে না।
 // তাই এখানে "#", অতিরিক্ত স্পেস বাদ দেওয়া হচ্ছে, আর case-ও ঠিক করে দেওয়া হচ্ছে।
@@ -112,13 +125,13 @@ function renderOrderCard(o) {
 
     return `
       <div class="order-card">
-        <div class="receipt-id">#${o.orderId || ''}</div>
+        <div class="receipt-id">#${escapeHtml(o.orderId)}</div>
         <div class="status-banner ${bannerClass}">${bannerText}</div>
         <div class="receipt-rows">
-          <div class="receipt-row"><span>প্রোডাক্ট</span><b>${o.product || ''}</b></div>
-          <div class="receipt-row"><span>পরিমাণ</span><b>${o.quantity || ''}</b></div>
-          <div class="receipt-row"><span>এলাকা</span><b>${o.address || ''}</b></div>
-          <div class="receipt-row"><span>তারিখ</span><b>${o.date || ''}</b></div>
+          <div class="receipt-row"><span>প্রোডাক্ট</span><b>${escapeHtml(o.product)}</b></div>
+          <div class="receipt-row"><span>পরিমাণ</span><b>${escapeHtml(o.quantity)}</b></div>
+          <div class="receipt-row"><span>এলাকা</span><b>${escapeHtml(o.address)}</b></div>
+          <div class="receipt-row"><span>তারিখ</span><b>${escapeHtml(o.date)}</b></div>
         </div>
         <div class="receipt-total">
           <span>সর্বমোট</span>
@@ -142,13 +155,13 @@ function renderOrderCard(o) {
 
   return `
     <div class="order-card">
-      <div class="receipt-id">#${o.orderId || ''}</div>
+      <div class="receipt-id">#${escapeHtml(o.orderId)}</div>
       <div class="status-track">${stepsHtml}</div>
       <div class="receipt-rows">
-        <div class="receipt-row"><span>প্রোডাক্ট</span><b>${o.product || ''}</b></div>
-        <div class="receipt-row"><span>পরিমাণ</span><b>${o.quantity || ''}</b></div>
-        <div class="receipt-row"><span>এলাকা</span><b>${o.address || ''}</b></div>
-        <div class="receipt-row"><span>তারিখ</span><b>${o.date || ''}</b></div>
+        <div class="receipt-row"><span>প্রোডাক্ট</span><b>${escapeHtml(o.product)}</b></div>
+        <div class="receipt-row"><span>পরিমাণ</span><b>${escapeHtml(o.quantity)}</b></div>
+        <div class="receipt-row"><span>এলাকা</span><b>${escapeHtml(o.address)}</b></div>
+        <div class="receipt-row"><span>তারিখ</span><b>${escapeHtml(o.date)}</b></div>
       </div>
       <div class="receipt-total">
         <span>সর্বমোট</span>

@@ -45,6 +45,7 @@ auth.onAuthStateChanged((user) => {
     document.getElementById("dashboard").style.display = "block";
     loadOrders();
     loadProducts();
+    loadComplaints();
   } else {
     document.getElementById("login").style.display = "block";
     document.getElementById("dashboard").style.display = "none";
@@ -126,15 +127,15 @@ function renderOrders() {
       const status = o.status || 'pending';
       itemsHtml += `
         <div class="order-item status-${status}">
-          <div class="order-top"><b>#${o.orderId || ''}</b><span>${o.date || ''}</span></div>
-          <div>${o.name || ''} — ${o.phone || ''}</div>
-          <div>${o.product || ''} × ${o.quantity || ''}</div>
-          <div>${o.address || ''}</div>
-          ${o.note ? `<div class="order-note">মন্তব্য: ${o.note}</div>` : ''}
-          <div class="order-total">৳ ${total}</div>
+          <div class="order-top"><b>#${escapeHtml(o.orderId)}</b><span>${escapeHtml(o.date)}</span></div>
+          <div>${escapeHtml(o.name)} — ${escapeHtml(o.phone)}</div>
+          <div>${escapeHtml(o.product)} × ${escapeHtml(o.quantity)}</div>
+          <div>${escapeHtml(o.address)}</div>
+          ${o.note ? `<div class="order-note">মন্তব্য: ${escapeHtml(o.note)}</div>` : ''}
+          <div class="order-total">৳ ${escapeHtml(total)}</div>
           <div class="status-row">
             <label>স্ট্যাটাস: </label>
-            <select class="status-select" data-id="${o.id}">
+            <select class="status-select" data-id="${escapeHtml(o.id)}">
               ${ORDER_STATUSES.map(s => `<option value="${s.key}" ${status === s.key ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
             </select>
           </div>
@@ -177,6 +178,102 @@ function updateOrderStatus(orderId, newStatus) {
 
 
 // ============================================================
+// Complaints — লোড, স্ট্যাটাস আপডেট
+// ============================================================
+
+// অভিযোগ-এর নাম/মোবাইল/জেলা/মেসেজ কাস্টমার নিজে টাইপ করে (কোনো লগইন ছাড়াই),
+// তাই innerHTML-এ বসানোর আগে escape করা হচ্ছে — নাহলে কেউ HTML/script ঢুকিয়ে দিলে
+// admin panel-এ সেটা চালু হয়ে যেতে পারে।
+function escapeHtml(value) {
+  const str = (value === undefined || value === null) ? '' : String(value);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const COMPLAINT_STATUSES = [
+  { key: 'new',      icon: '🆕', label: 'নতুন' },
+  { key: 'progress',  icon: '⏳', label: 'দেখা হচ্ছে' },
+  { key: 'resolved', icon: '✅', label: 'সমাধান হয়েছে' }
+];
+
+let allComplaints = [];
+
+function loadComplaints() {
+  const list = document.getElementById("complaintsList");
+  list.innerHTML = "লোড হচ্ছে...";
+
+  db.collection("complaints").orderBy("createdAt", "desc").get()
+    .then((snapshot) => {
+      allComplaints = [];
+      snapshot.forEach((doc) => allComplaints.push({ id: doc.id, ...doc.data() }));
+      const newCount = allComplaints.filter(c => (c.status || 'new') === 'new').length;
+      document.getElementById('complaintsCount').textContent = newCount ? newCount : '';
+      renderComplaints();
+    })
+    .catch((err) => {
+      list.innerHTML = "<p>অভিযোগ লোড করতে সমস্যা হয়েছে।</p>";
+      console.error("Complaints load error:", err);
+    });
+}
+
+function complaintStatusMeta(key) {
+  return COMPLAINT_STATUSES.find(s => s.key === key) || COMPLAINT_STATUSES[0];
+}
+
+function renderComplaints() {
+  const list = document.getElementById("complaintsList");
+
+  if (allComplaints.length === 0) {
+    list.innerHTML = "<p>এখনো কোনো অভিযোগ নেই।</p>";
+    return;
+  }
+
+  let html = '';
+  allComplaints.forEach((c) => {
+    const status = c.status || 'new';
+    html += `
+      <div class="order-item status-${status === 'resolved' ? 'delivered' : (status === 'new' ? 'cancelled' : '')}">
+        <div class="order-top"><b>অর্ডার #${escapeHtml(c.orderId)}</b></div>
+        <div>${escapeHtml(c.name)} — ${escapeHtml(c.mobile)}</div>
+        <div>জেলা: ${escapeHtml(c.district)}</div>
+        <div class="order-note">${escapeHtml(c.message)}</div>
+        <div class="status-row">
+          <label>স্ট্যাটাস: </label>
+          <select class="complaint-status-select" data-id="${c.id}">
+            ${COMPLAINT_STATUSES.map(s => `<option value="${s.key}" ${status === s.key ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+  });
+
+  list.innerHTML = html;
+
+  document.querySelectorAll('.complaint-status-select').forEach(select => {
+    select.addEventListener('change', (e) => {
+      updateComplaintStatus(e.target.getAttribute('data-id'), e.target.value);
+    });
+  });
+}
+
+function updateComplaintStatus(id, newStatus) {
+  db.collection("complaints").doc(id).update({ status: newStatus })
+    .then(() => {
+      const c = allComplaints.find(x => x.id === id);
+      if (c) c.status = newStatus;
+      renderComplaints();
+    })
+    .catch((err) => {
+      alert("Status আপডেট করতে সমস্যা হয়েছে।");
+      console.error("Complaint status update error:", err);
+    });
+}
+
+
+// ============================================================
 // Products — Add / Edit / Delete
 // ============================================================
 
@@ -201,12 +298,12 @@ function loadProducts() {
         const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
         html += `
           <div class="order-item">
-            <div class="order-top"><b>${p.name || ''}</b><span>৳ ${price}</span></div>
-            <div>${p.fullName || ''}</div>
-            <div class="order-note">${p.tag || ''} · slug: ${p.slug || doc.id}</div>
+            <div class="order-top"><b>${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
+            <div>${escapeHtml(p.fullName)}</div>
+            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)}</div>
             <div class="status-row">
-              <button class="small-btn edit-btn" data-id="${doc.id}">✏️ এডিট</button>
-              <button class="small-btn delete-btn" data-id="${doc.id}">🗑️ ডিলিট</button>
+              <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
+              <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
             </div>
           </div>`;
       });

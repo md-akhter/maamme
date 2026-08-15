@@ -23,5 +23,13 @@ service cloud.firestore {
       allow read: if true;
       allow update, delete: if request.auth != null;
     }
+
+    // অভিযোগ — যেকোনো কাস্টমার তৈরি (create) করতে পারবে (complain.html থেকে,
+    // order ID যাচাই করেই), কিন্তু শুধু admin এগুলো পড়তে/স্ট্যাটাস আপডেট/ডিলিট করতে পারবে —
+    // orders-এর মতো public read না, কারণ অভিযোগে ব্যক্তিগত তথ্য বেশি স্পর্শকাতর হতে পারে।
+    match /complaints/{complaintId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
   }
 }

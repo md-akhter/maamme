@@ -31,6 +31,7 @@
     <div class="tabs">
         <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 অর্ডার <span class="count-badge" id="ordersCount"></span></button>
         <button class="tab-btn" id="tabBtn-products" onclick="switchTab('products')">🪑 প্রোডাক্ট <span class="count-badge" id="productsCount"></span></button>
+        <button class="tab-btn" id="tabBtn-complaints" onclick="switchTab('complaints')">📢 অভিযোগ <span class="count-badge" id="complaintsCount"></span></button>
     </div>
 
     <div class="tab-content active" id="tabContent-orders">
@@ -38,6 +39,13 @@
             <h3>📦 Customer Orders</h3>
             <button class="small-btn" style="margin-bottom:14px;" onclick="exportOrdersToCSV()">📥 CSV ডাউনলোড করুন (ব্যাকআপ)</button>
             <div id="ordersList">লোড হচ্ছে...</div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tabContent-complaints">
+        <div class="card">
+            <h3>📢 কাস্টমার অভিযোগ</h3>
+            <div id="complaintsList">লোড হচ্ছে...</div>
         </div>
     </div>
 

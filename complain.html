@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>অভিযোগ জানান — MAAMME.COM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="style.css?v=2">
+<style>
+  /* শুধু অভিযোগ পেজের জন্য কিছু addition — বাকি সব style.css থেকে আসছে (track.html-এর মতোই প্যাটার্ন) */
+  .complain-section{background:var(--walnut-950); color:var(--text-light); min-height:100vh; padding:56px 0;}
+  .complain-top{max-width:520px; margin:0 auto 32px; text-align:center;}
+  .complain-top .logo-link{display:inline-block; margin-bottom:22px;}
+  .complain-top h1{font-size:clamp(26px,4vw,34px); font-weight:500; margin:0 0 10px;}
+  .complain-top p{font-size:14.5px; color:rgba(246,239,223,0.75); line-height:1.7;}
+
+  .complain-box{max-width:520px; margin:0 auto;}
+  .complain-card{
+    background:var(--ivory); color:var(--text-dark); border-radius:2px;
+    padding:28px; border:1px solid var(--line-light);
+  }
+  .complain-card .field label{color:#4a5670;}
+  .complain-card .field-row{grid-template-columns:1fr 1fr;}
+
+  .complain-msg{font-size:13.5px; margin-top:14px; text-align:center; color:#5b6780; display:none;}
+  .complain-msg.show{display:block;}
+  .complain-msg.error{color:#c0533e;}
+
+  .complain-card .field input.invalid,
+  .complain-card .field textarea.invalid{
+    border-bottom-color:#c0533e; background:rgba(192,83,62,0.06);
+  }
+
+  .complain-back{display:block; text-align:center; margin-top:26px; font-size:13.5px; color:rgba(246,239,223,0.6); text-decoration:none;}
+  .complain-back:hover{color:var(--brass-bright);}
+
+  @media (max-width:560px){
+    .complain-card{padding:20px;}
+    .complain-card .field-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<section class="complain-section">
+  <div class="wrap">
+
+    <div class="complain-top">
+      <a href="index.html#" class="logo-link"><img src="images/logo_pic.jpeg" width="120" height="50" alt="MAAMME.COM"></a>
+      <h1>অভিযোগ জানান</h1>
+      <p>অর্ডারে কোনো সমস্যা হলে নিচের ফর্মটি পূরণ করুন। অভিযোগ জমা দিতে আপনার অর্ডার আইডি প্রয়োজন।</p>
+    </div>
+
+    <div class="complain-box">
+      <div class="complain-card">
+        <form id="complainForm">
+          <div class="field">
+            <label for="cOrderId">অর্ডার আইডি *</label>
+            <input type="text" id="cOrderId" placeholder="যেমন: AS-123456" required>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="cName">নাম *</label>
+              <input type="text" id="cName" placeholder="আপনার নাম" required>
+            </div>
+            <div class="field">
+              <label for="cMobile">মোবাইল নম্বর *</label>
+              <input type="text" id="cMobile" placeholder="01712345678" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="cDistrict">জেলার নাম *</label>
+            <input type="text" id="cDistrict" placeholder="যেমন: ঢাকা" required>
+          </div>
+
+          <div class="field">
+            <label for="cMessage">অভিযোগের বিবরণ *</label>
+            <textarea id="cMessage" placeholder="সমস্যাটি বিস্তারিত লিখুন..." required></textarea>
+          </div>
+
+          <button type="submit" class="submit-btn" id="complainSubmitBtn">অভিযোগ জমা দিন</button>
+          <div class="complain-msg" id="complainMsg"></div>
+        </form>
+      </div>
+
+      <a href="index.html#" class="complain-back">← হোমপেজে ফিরে যান</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-init.js"></script>
+<script src="complain.js"></script>
+
+</body>
+</html>
