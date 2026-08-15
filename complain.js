@@ -100,22 +100,40 @@ form.addEventListener('submit', (e) => {
         return;
       }
 
-      submitBtn.textContent = 'জমা হচ্ছে...';
+      // এই order ID-তে আগে থেকেই "খোলা" (new/progress) কোনো অভিযোগ থাকলে
+      // নতুন করে জমা দিতে দেওয়া হবে না — একই সমস্যা বার বার সাবমিট ঠেকাতে
+      return db.collection('complaints').where('orderId', '==', orderId).get()
+        .then((complaintSnap) => {
+          const hasOpen = complaintSnap.docs.some(d => {
+            const st = d.data().status || 'new';
+            return st === 'new' || st === 'progress';
+          });
 
-      return db.collection('complaints').add({
-        orderId,
-        name,
-        mobile,
-        district,
-        message,
-        status: 'new',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        form.reset();
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'অভিযোগ জমা দিন';
-        showMsg('ধন্যবাদ! আপনার অভিযোগ জমা হয়েছে — আমরা শীঘ্রই যোগাযোগ করব।', false);
-      });
+          if (hasOpen) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'অভিযোগ জমা দিন';
+            markInvalid(cOrderId, true);
+            showMsg('এই অর্ডারে আপনার একটি অভিযোগ ইতিমধ্যে জমা আছে, আমরা দেখছি। সমাধান না হওয়া পর্যন্ত নতুন করে জমা দেওয়ার দরকার নেই।', true);
+            return;
+          }
+
+          submitBtn.textContent = 'জমা হচ্ছে...';
+
+          return db.collection('complaints').add({
+            orderId,
+            name,
+            mobile,
+            district,
+            message,
+            status: 'new',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(() => {
+            form.reset();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'অভিযোগ জমা দিন';
+            showMsg('ধন্যবাদ! আপনার অভিযোগ জমা হয়েছে — আমরা শীঘ্রই যোগাযোগ করব।', false);
+          });
+        });
     })
     .catch((err) => {
       submitBtn.disabled = false;
