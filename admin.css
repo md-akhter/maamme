@@ -75,6 +75,23 @@
             margin:0;
         }
 
+        .topbar-actions{
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        .view-site-link{
+            font-size:13px;
+            color:#666;
+            text-decoration:none;
+            white-space:nowrap;
+        }
+
+        .view-site-link:hover{
+            color:#e91e63;
+        }
+
         .tabs{
             display:flex;
             gap:8px;
@@ -258,6 +275,19 @@
             .tab-btn{
                 font-size:13px;
                 padding:10px 4px;
+            }
+
+            .topbar h2{
+                font-size:15px;
+            }
+
+            .view-site-link{
+                font-size:12px;
+            }
+
+            .logout-btn{
+                padding:7px 12px;
+                font-size:13px;
             }
 
             .tab-content{
