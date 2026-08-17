@@ -332,3 +332,40 @@ document.getElementById('newOrderBtn').addEventListener('click', () => {
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+
+// ============================================================
+// মোবাইল হেডার — ☰ আইকনে ট্যাপ করলে "ট্র্যাক করুন" ও "অর্ডার করুন"
+// dropdown আকারে দেখা যায়। বাইরে ক্লিক করলে বা কোনো লিংকে ক্লিক করলে বন্ধ হয়ে যায়।
+// এটা শুধু ছোট স্ক্রিনে দেখা যায় (style.css-এর @media (max-width:560px) দ্রষ্টব্য) —
+// বড় স্ক্রিনে আগের মতোই দুটো বাটন পাশাপাশি দেখা যাবে, এই মেনু কাজ করবে না।
+// ============================================================
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const navActionsMenu = document.getElementById('navActions');
+
+function toggleMobileMenu() {
+  if (!navActionsMenu) return;
+  const isOpen = navActionsMenu.classList.toggle('open');
+  if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeMobileMenu() {
+  if (!navActionsMenu) return;
+  navActionsMenu.classList.remove('open');
+  if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', 'false');
+}
+
+if (navActionsMenu) {
+  navActionsMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', closeMobileMenu);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (!navActionsMenu || !navActionsMenu.classList.contains('open')) return;
+  if (navActionsMenu.contains(e.target) || (mobileMenuToggle && mobileMenuToggle.contains(e.target))) return;
+  closeMobileMenu();
+});
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 560) closeMobileMenu();
+});
