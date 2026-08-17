@@ -7,6 +7,8 @@
     --brass:#E0A233;
     --brass-bright:#F2BE5C;
     --sage:#4E5B41;
+    --rust:#C0533E;
+    --rust-dark:#9C4230;
     --text-dark:#16233F;
     --text-light:#F5F7FB;
     --line:rgba(22,35,63,0.14);
@@ -61,8 +63,10 @@
     font-family:'Fraunces',serif; font-size:24px; font-weight:600;
     letter-spacing:0.01em;
   }
-  .logo span{color:var(--brass);}
-  .nav-links{display:flex; gap:32px; list-style:none; margin:0; padding:0; font-size:15px;}
+  .logo a{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text-dark);}
+  .logo-text span{color:var(--brass);}
+  .logo img{height:42px; width:auto; display:block;}
+  .nav-links{display:flex; flex:1; justify-content:center; gap:32px; list-style:none; margin:0; padding:0; font-size:15px;}
   .nav-links a{text-decoration:none; position:relative; padding-bottom:3px;}
   .nav-links a::after{
     content:''; position:absolute; left:0; bottom:0; width:0; height:1px;
@@ -275,7 +279,11 @@
   .field input:focus, .field select:focus, .field textarea:focus{
     outline:none; border-bottom-color:var(--brass);
   }
-  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+  .field-row.product-qty-row{grid-template-columns:1.4fr 1fr;}
+  .field-row.address-note-row .field input,
+  .field-row.address-note-row .field textarea{height:64px;}
+  .field-row.address-note-row .field textarea{padding-top:21px; padding-bottom:21px;}
   .field textarea{resize:vertical; min-height:64px;}
   .submit-btn{
     width:100%; margin-top:8px; background:var(--walnut-950); color:var(--text-light);
@@ -344,6 +352,7 @@
     .grid-products{grid-template-columns:1fr;}
     .steps{grid-template-columns:1fr;}
     .field-row{grid-template-columns:1fr;}
+    .field-row.product-qty-row{grid-template-columns:1.3fr 1fr; gap:10px;}
     .hero-bottom{flex-direction:column; align-items:flex-start; gap:20px;}
     .hero-stats{gap:26px; flex-wrap:wrap;}
     .nav-cta{padding:9px 16px; font-size:13px;}
@@ -358,6 +367,9 @@
     .field label{font-size:11px; margin-bottom:5px;}
     .field input, .field select, .field textarea{font-size:14.5px; padding:8px 2px;}
     .field textarea{min-height:48px;}
+    .field-row.address-note-row .field input,
+    .field-row.address-note-row .field textarea{height:48px;}
+    .field-row.address-note-row .field textarea{padding-top:14px; padding-bottom:14px;}
     .total-line{padding-top:10px; margin-bottom:14px; font-size:12.5px;}
     .total-line b{font-size:17px;}
     .submit-btn, .btn-ghost-dark{padding:12px; font-size:14px;}

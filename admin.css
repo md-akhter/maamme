@@ -1,4 +1,14 @@
-*{
+:root{
+            --walnut-950:#0B1B3A;
+            --brass:#E0A233;
+            --brass-bright:#F2BE5C;
+            --sage:#4E5B41;
+            --rust:#C0533E;
+            --rust-dark:#9C4230;
+            --text-dark:#16233F;
+        }
+
+        *{
             margin:0;
             padding:0;
             box-sizing:border-box;
@@ -21,7 +31,7 @@
         h2{
             text-align:center;
             margin-bottom:20px;
-            color:#333;
+            color:var(--text-dark);
         }
 
         input{
@@ -35,16 +45,18 @@
         button{
             width:100%;
             padding:12px;
-            background:#e91e63;
+            background:var(--walnut-950);
             color:#fff;
             border:none;
             border-radius:5px;
             cursor:pointer;
             font-size:16px;
+            transition:background .2s ease, color .2s ease;
         }
 
         button:hover{
-            background:#c2185b;
+            background:var(--brass-bright);
+            color:var(--walnut-950);
         }
 
         #dashboard{
@@ -83,13 +95,13 @@
 
         .view-site-link{
             font-size:13px;
-            color:#666;
+            color:#6b7690;
             text-decoration:none;
             white-space:nowrap;
         }
 
         .view-site-link:hover{
-            color:#e91e63;
+            color:var(--brass);
         }
 
         .tabs{
@@ -110,9 +122,9 @@
         }
 
         .tab-btn.active{
-            background:#e91e63;
-            color:#fff;
-            border-color:#e91e63;
+            background:var(--brass);
+            color:var(--walnut-950);
+            border-color:var(--brass);
         }
 
         .count-badge{
@@ -157,19 +169,19 @@
         .order-top{
             display:flex;
             justify-content:space-between;
-            color:#888;
+            color:#6b7690;
             font-size:12px;
             margin-bottom:6px;
         }
 
         .order-note{
-            color:#666;
+            color:#5b6780;
             font-style:italic;
         }
 
         .order-total{
             font-weight:bold;
-            color:#e91e63;
+            color:var(--walnut-950);
             margin-top:6px;
         }
 
@@ -192,7 +204,7 @@
         .card label{
             display:block;
             font-size:12px;
-            color:#666;
+            color:#4a5670;
             margin-top:10px;
             margin-bottom:2px;
         }
@@ -205,10 +217,10 @@
         }
 
         .delete-btn{
-            background:#c0392b;
+            background:var(--rust);
         }
         .delete-btn:hover{
-            background:#992d22;
+            background:var(--rust-dark);
         }
 
         .stats-bar{
@@ -231,13 +243,13 @@
         }
 
         .stat-chip:hover{
-            border-color:#e91e63;
+            border-color:var(--brass);
         }
 
         .stat-chip.active{
-            background:#e91e63;
-            border-color:#e91e63;
-            color:#fff;
+            background:var(--brass);
+            border-color:var(--brass);
+            color:var(--walnut-950);
         }
 
         .stat-count{
@@ -245,17 +257,17 @@
         }
 
         .order-item.status-cancelled{
-            border-left:4px solid #c0392b;
-            background:#fdf3f2;
+            border-left:4px solid var(--rust);
+            background:rgba(192,83,62,0.06);
         }
 
         .order-item.status-returned{
-            border-left:4px solid #d68910;
-            background:#fdf6ec;
+            border-left:4px solid var(--brass);
+            background:rgba(224,162,51,0.10);
         }
 
         .order-item.status-delivered{
-            border-left:4px solid #2e7d32;
+            border-left:4px solid var(--sage);
         }
 
         /* ছোট স্ক্রিন (মোবাইল) — লগইন বক্স, ট্যাব আর স্ট্যাটাস চিপগুলো এলোমেলো/ওভারফ্লো

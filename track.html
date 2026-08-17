@@ -7,12 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" type="text/css" href="style.css?v=2">
+<link rel="stylesheet" type="text/css" href="style.css?v=6">
 <style>
   /* শুধু ট্র্যাকিং পেজের জন্য কিছু ছোট addition — বাকি সব style.css থেকে আসছে */
   .track-section{background:var(--walnut-950); color:var(--text-light); min-height:100vh; padding:56px 0;}
   .track-top{max-width:520px; margin:0 auto 32px; text-align:center;}
   .track-top .logo-link{display:inline-block; margin-bottom:22px;}
+  .track-top .logo-link img{height:42px; width:auto; display:block;}
   .track-top h1{font-size:clamp(26px,4vw,34px); font-weight:500; margin:0 0 10px;}
   .track-top p{font-size:14.5px; color:rgba(246,239,223,0.75); line-height:1.7;}
 
@@ -44,7 +45,7 @@
 
   .track-msg{font-size:13.5px; margin-top:14px; text-align:center; color:rgba(246,239,223,0.75); display:none;}
   .track-msg.show{display:block;}
-  .track-msg.error{color:#e0a58c;}
+  .track-msg.error{color:var(--rust);}
 
   .results{margin-top:28px; display:flex; flex-direction:column; gap:16px;}
 
@@ -81,17 +82,17 @@
     padding:12px 14px; border-radius:2px; font-size:14px; font-weight:600;
     text-align:center; margin:16px 0 20px;
   }
-  .status-banner.cancelled{background:#fbe4e0; color:#a3392a;}
-  .status-banner.returned{background:#fbeed9; color:#8a5a10;}
+  .status-banner.cancelled{background:rgba(192,83,62,0.10); color:var(--rust);}
+  .status-banner.returned{background:rgba(224,162,51,0.14); color:#8a5a10;}
 
   .complaint-badge-row{margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);}
   .complaint-badge{
     display:inline-flex; align-items:center; gap:6px; padding:6px 12px;
     border-radius:20px; font-size:12.5px; font-weight:600;
   }
-  .complaint-badge.new{background:#fdf6ec; color:#8a5a10;}
-  .complaint-badge.progress{background:#eaf1fb; color:#2c5c9c;}
-  .complaint-badge.resolved{background:#e9f3ea; color:#2e7d32;}
+  .complaint-badge.new{background:rgba(224,162,51,0.14); color:#8a5a10;}
+  .complaint-badge.progress{background:var(--ivory-dim); color:var(--walnut-800);}
+  .complaint-badge.resolved{background:rgba(78,91,65,0.12); color:var(--sage);}
 
   .track-back{display:block; text-align:center; margin-top:26px; font-size:13.5px; color:rgba(246,239,223,0.6); text-decoration:none;}
   .track-back:hover{color:var(--brass-bright);}
@@ -108,7 +109,7 @@
   <div class="wrap">
 
     <div class="track-top">
-      <a href="index.html#" class="logo-link"><img src="images/logo_pic.jpeg" width="120" height="50" alt="MAAMME.COM"></a>
+      <a href="index.html#" class="logo-link"><img src="images/logo_pic.jpeg" alt="MAAMME.COM"></a>
       <h1>আপনার অর্ডার ট্র্যাক করুন</h1>
       <p>অর্ডার আইডি অথবা যে ফোন নম্বর দিয়ে অর্ডার করেছিলেন, সেটা দিয়ে বর্তমান স্ট্যাটাস দেখুন। কোনো অভিযোগ জমা দেওয়া থাকলে তার স্ট্যাটাসও এখানেই দেখতে পাবেন।</p>
     </div>

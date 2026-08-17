@@ -21,6 +21,29 @@ function formatTaka(n) {
   return '৳ ' + n.toLocaleString('en-IN');
 }
 
+const BN_DIGITS = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+const BN_MONTHS = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+
+function toBengaliDigits(n) {
+  return String(n).split('').map(ch => (ch >= '0' && ch <= '9') ? BN_DIGITS[ch] : ch).join('');
+}
+
+// টাইমজোন 'Asia/Dhaka'-তে দিন/মাস/বছর বের করে (কিছু ডিভাইস/ব্রাউজারে, বিশেষ করে
+// Facebook/Messenger-এর in-app browser-এ, সিস্টেম টাইমজোন ভুলভাবে UTC ধরে, যার ফলে
+// মধ্যরাতের কাছাকাছি অর্ডার করলে তারিখ ১ দিন পিছিয়ে সেভ হয়ে যেত) — তারপর নিজেরাই বাংলা
+// সংখ্যা ও মাসের নাম দিয়ে তারিখ বানানো হচ্ছে, কারণ toLocaleDateString('bn-BD', ...) কিছু
+// ব্রাউজারে ভাঙা/অসম্পূর্ণ সংখ্যা-গ্লিফ রেন্ডার করে।
+function formatBengaliDate(date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: 'numeric', month: 'numeric', year: 'numeric', timeZone: 'Asia/Dhaka'
+  }).formatToParts(date);
+  const get = (type) => Number(parts.find(p => p.type === type).value);
+  const day = get('day');
+  const month = get('month');
+  const year = get('year');
+  return toBengaliDigits(day) + ' ' + BN_MONTHS[month - 1] + ', ' + toBengaliDigits(year);
+}
+
 function loadProducts() {
   if (!window.firebase || !firebase.firestore) return;
 
@@ -231,10 +254,11 @@ form.addEventListener('submit', (e) => {
   const unitPrice = currentUnitPrice();
   const total = unitPrice * qty;
   const orderId = 'AS-' + Date.now().toString().slice(-6);
-  // timeZone স্পষ্টভাবে 'Asia/Dhaka' দেওয়া হচ্ছে — কিছু ডিভাইস/ব্রাউজারে (বিশেষ করে
-  // Facebook/Messenger-এর in-app browser) সিস্টেম টাইমজোন ভুলভাবে UTC ধরে, যার ফলে
-  // মধ্যরাতের কাছাকাছি অর্ডার করলে তারিখ ১ দিন পিছিয়ে সেভ হয়ে যেত।
-  const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' });
+  // toLocaleDateString('bn-BD', ...) কিছু ব্রাউজার/ডিভাইসে ভুল/অসম্পূর্ণ সংখ্যা রেন্ডার করে
+  // (যেমন "১৭" এর জায়গায় ভাঙা গ্লিফ দেখায়) — তাই নিজেরাই বাংলা সংখ্যা ও মাসের নাম দিয়ে
+  // তারিখ বানানো হচ্ছে, timeZone 'Asia/Dhaka' আগের মতোই ধরে রেখে (মধ্যরাতের কাছাকাছি
+  // অর্ডারে তারিখ ভুল হওয়া ঠেকাতে)।
+  const dateStr = formatBengaliDate(new Date());
 
   lastOrder = { name, phone, product, qty, address, note, total, orderId, dateStr };
   document.getElementById('orderIdField').value = orderId;
