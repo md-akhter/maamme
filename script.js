@@ -283,6 +283,16 @@ form.addEventListener('submit', (e) => {
   form.style.display = 'none';
   receiptView.style.display = 'block';
   receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Meta Pixel — কাস্টমার অর্ডার ডিটেইলস/রিসিট পর্যন্ত পৌঁছেছে (এখনো কনফার্ম করেনি)
+  if (window.fbq) {
+    fbq('track', 'InitiateCheckout', {
+      value: total,
+      currency: 'BDT',
+      content_name: product,
+      num_items: qty
+    });
+  }
 });
 
 // Confirm — Firestore-এ অর্ডার সেভ করে (+ Netlify Forms ব্যাকআপ, Vercel-এ silently fail করবে)
@@ -312,6 +322,17 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
       note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
       document.getElementById('trackHint').style.display = 'block';
+
+      // Meta Pixel — আসল কনভার্সন: অর্ডার Firestore-এ সফলভাবে সেভ হয়েছে
+      if (window.fbq) {
+        fbq('track', 'Purchase', {
+          value: lastOrder.total,
+          currency: 'BDT',
+          content_name: lastOrder.product,
+          num_items: lastOrder.qty,
+          content_ids: [lastOrder.orderId]
+        });
+      }
     })
     .catch((err) => {
       console.error('Firestore save failed:', err);
