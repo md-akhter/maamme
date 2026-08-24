@@ -128,6 +128,7 @@
     flex-wrap:wrap; gap:24px;
   }
   .hero-actions{display:flex; gap:16px; flex-wrap:wrap; margin-bottom:0;}
+  .hero-mobile-tagline{display:none;}
 
   .hero-stats{
     display:flex; gap:40px; border-top:none; padding-top:0;
@@ -365,6 +366,30 @@
     .field-row.product-qty-row{grid-template-columns:1.3fr 1fr; gap:10px;}
     .hero-bottom{flex-direction:column; align-items:flex-start; gap:20px;}
     .hero-stats{gap:26px; flex-wrap:wrap;}
+
+    /* মোবাইলে দুইটা বাটনের পর "আপনার প্রয়োজনের সেরা ফার্নিচার" টেক্সট দেখানো হচ্ছে —
+       ডেস্কটপ/ট্যাবলেটে এটা লুকানো থাকে (এই মিডিয়া কোয়েরির বাইরে .hero-mobile-tagline{display:none}) */
+    .hero-mobile-tagline{
+      display:block;
+      font-size:clamp(20px,6vw,26px);
+      font-weight:500;
+      line-height:1.25;
+      color:var(--text-light);
+      margin:-6px 0 0;
+    }
+
+    /* মোবাইলে হিরোর বাটনের পরই উপরের tagline (.hero-mobile-tagline) দেখানো হচ্ছে,
+       তাই products সেকশনের ভেতরের "আমাদের সংগ্রহ" eyebrow + হেডিং + প্যারাগ্রাফ
+       (একই লেখার পুনরাবৃত্তি) মোবাইলে লুকিয়ে সরাসরি প্রোডাক্ট কার্ড দেখানো হচ্ছে */
+    .products .sec-head{display:none;}
+    .products{padding-top:28px;}
+
+    /* মোবাইলে হিরোর নিচের মার্কি স্ট্রিপ (গ্যারান্টি/স্টিল/ঝালাই লেখা) দরকার নেই */
+    .strip{display:none;}
+
+    /* মোবাইলে বাটন → tagline-এর পরই সরাসরি প্রোডাক্ট গ্রিড দেখানো হচ্ছে,
+       মাঝে স্ট্যাটস (৪০০+ / ১২ / ১০০%) সারি দরকার নেই */
+    .hero-stats{display:none;}
 
     /* Hamburger menu: "ট্র্যাক করুন" ও "অর্ডার করুন" বাটন দুটো মোবাইলে
        আলাদা আলাদা না দেখিয়ে ☰ আইকনের নিচে dropdown হিসেবে দেখানো হচ্ছে —
