@@ -70,6 +70,7 @@ function loadProducts() {
             <div class="card-body">
               <div class="tag">${p.tag || ''}</div>
               <h3>${p.name}</h3>
+              <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
               <p>${p.description || ''}</p>
               <div class="card-foot">
                 <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
@@ -104,6 +105,17 @@ function loadProducts() {
 
 // প্রোডাক্ট কার্ড আর dropdown রেন্ডার হওয়ার পর এই ফাংশন সব বাটন/ইভেন্ট সচল করে
 function initProductInteractions() {
+
+  // "আইটেম বিবরণ" বাটন — মোবাইলে ট্যাপ করলে ঐ কার্ডের পুরো বিবরণ (description) দেখায়/লুকায়
+  // (ডেস্কটপে এই বাটন CSS দিয়ে লুকানো থাকে, description এমনিতেই দেখা যায়)
+  document.querySelectorAll('.item-details-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const descEl = btn.nextElementSibling;
+      if (!descEl) return;
+      const isOpen = descEl.classList.toggle('open');
+      btn.textContent = isOpen ? 'বিবরণ লুকান' : 'আইটেম বিবরণ';
+    });
+  });
 
   // Per-product "copy link" বাটন
   document.querySelectorAll('.copy-link-btn').forEach(btn => {
@@ -283,16 +295,6 @@ form.addEventListener('submit', (e) => {
   form.style.display = 'none';
   receiptView.style.display = 'block';
   receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Meta Pixel — কাস্টমার অর্ডার ডিটেইলস/রিসিট পর্যন্ত পৌঁছেছে (এখনো কনফার্ম করেনি)
-  if (window.fbq) {
-    fbq('track', 'InitiateCheckout', {
-      value: total,
-      currency: 'BDT',
-      content_name: product,
-      num_items: qty
-    });
-  }
 });
 
 // Confirm — Firestore-এ অর্ডার সেভ করে (+ Netlify Forms ব্যাকআপ, Vercel-এ silently fail করবে)
@@ -322,17 +324,6 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
       note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
       document.getElementById('trackHint').style.display = 'block';
-
-      // Meta Pixel — আসল কনভার্সন: অর্ডার Firestore-এ সফলভাবে সেভ হয়েছে
-      if (window.fbq) {
-        fbq('track', 'Purchase', {
-          value: lastOrder.total,
-          currency: 'BDT',
-          content_name: lastOrder.product,
-          num_items: lastOrder.qty,
-          content_ids: [lastOrder.orderId]
-        });
-      }
     })
     .catch((err) => {
       console.error('Firestore save failed:', err);
