@@ -293,14 +293,16 @@ function loadProducts() {
         return;
       }
       let html = "";
-      snapshot.forEach((doc) => {
+      const total = snapshot.size;
+      snapshot.forEach((doc, index) => {
         const p = doc.data();
         const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
+        const position = index + 1;
         html += `
           <div class="order-item">
-            <div class="order-top"><b>${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
+            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
             <div>${escapeHtml(p.fullName)}</div>
-            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)}</div>
+            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
               <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
