@@ -344,8 +344,15 @@ function saveProduct() {
 
   const productData = { name, fullName, tag, description, price, image, slug, order };
 
-  // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে
+  // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
+  // এডিট মোডে slug বদলে গেলে এটা আসলে একটা নতুন doc ID-তে সেভ হয়, তাই পুরনো
+  // slug-এর ডকুমেন্টটা আলাদা করে ডিলিট না করলে ডুপ্লিকেট প্রোডাক্ট থেকে যায়।
   db.collection("products").doc(slug).set(productData)
+    .then(() => {
+      if (editingId && editingId !== slug) {
+        return db.collection("products").doc(editingId).delete();
+      }
+    })
     .then(() => {
       msg.style.color = "#2e7d32";
       msg.textContent = editingId ? "✅ প্রোডাক্ট আপডেট হয়েছে।" : "✅ প্রোডাক্ট যোগ হয়েছে।";
