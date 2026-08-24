@@ -364,7 +364,11 @@
     .field-row{grid-template-columns:1fr;}
     .field-row.product-qty-row{grid-template-columns:1.3fr 1fr; gap:10px;}
     .hero-bottom{flex-direction:column; align-items:flex-start; gap:20px;}
-    .hero-stats{gap:26px; flex-wrap:wrap;}
+    .hero-stats{display:none;}
+    .wave-divider{display:none;}
+    .strip{display:none;}
+    .sec-head h2, .sec-head p{display:none;}
+    .sec-head{margin-bottom:12px;}
 
     /* Hamburger menu: "ট্র্যাক করুন" ও "অর্ডার করুন" বাটন দুটো মোবাইলে
        আলাদা আলাদা না দেখিয়ে ☰ আইকনের নিচে dropdown হিসেবে দেখানো হচ্ছে —
