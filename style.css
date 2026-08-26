@@ -384,7 +384,7 @@
     .steps{grid-template-columns:1fr;}
     .field-row{grid-template-columns:1fr;}
     .field-row.product-qty-row{grid-template-columns:1.3fr 1fr; gap:10px;}
-    .hero-bottom{flex-direction:column; align-items:flex-start; gap:20px;}
+    .hero-bottom{flex-direction:column; align-items:flex-start; gap:20px; padding-bottom:0;}
     .hero-stats{gap:26px; flex-wrap:wrap;}
 
     /* মোবাইলে দুইটা বাটনের পর "আপনার প্রয়োজনের সেরা ফার্নিচার" টেক্সট দেখানো হচ্ছে —
@@ -402,7 +402,7 @@
        তাই products সেকশনের ভেতরের "আমাদের সংগ্রহ" eyebrow + হেডিং + প্যারাগ্রাফ
        (একই লেখার পুনরাবৃত্তি) মোবাইলে লুকিয়ে সরাসরি প্রোডাক্ট কার্ড দেখানো হচ্ছে */
     .products .sec-head{display:none;}
-    .products{padding-top:28px;}
+    .products{padding-top:20px;}
 
     /* মোবাইলে হিরোর নিচের মার্কি স্ট্রিপ (গ্যারান্টি/স্টিল/ঝালাই লেখা) দরকার নেই */
     .strip{display:none;}
