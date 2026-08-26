@@ -70,7 +70,10 @@ function loadProducts() {
             <div class="card-body">
               <div class="tag">${p.tag || ''}</div>
               <h3>${p.name}</h3>
-              <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
+              <div class="details-price-row">
+                <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
+                <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
+              </div>
               <p>${p.description || ''}</p>
               <div class="card-foot">
                 <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
