@@ -113,7 +113,10 @@ function initProductInteractions() {
   // (ডেস্কটপে এই বাটন CSS দিয়ে লুকানো থাকে, description এমনিতেই দেখা যায়)
   document.querySelectorAll('.item-details-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
-      const descEl = btn.nextElementSibling;
+      // বাটনটা এখন .details-price-row-এর ভেতরে (দামের পাশে) থাকায় সরাসরি nextElementSibling
+      // দিয়ে বিবরণের <p> পাওয়া যায় না — তাই কার্ডের ভেতর থেকে <p> খুঁজে নেওয়া হচ্ছে
+      const cardBody = btn.closest('.card-body');
+      const descEl = cardBody ? cardBody.querySelector('p') : null;
       if (!descEl) return;
       const isOpen = descEl.classList.toggle('open');
       btn.textContent = isOpen ? 'বিবরণ লুকান' : 'আইটেম বিবরণ';
