@@ -35,6 +35,7 @@
         <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 অর্ডার <span class="count-badge" id="ordersCount"></span></button>
         <button class="tab-btn" id="tabBtn-products" onclick="switchTab('products')">🪑 প্রোডাক্ট <span class="count-badge" id="productsCount"></span></button>
         <button class="tab-btn" id="tabBtn-complaints" onclick="switchTab('complaints')">📢 অভিযোগ <span class="count-badge" id="complaintsCount"></span></button>
+        <button class="tab-btn" id="tabBtn-posts" onclick="switchTab('posts')">📝 পোস্ট <span class="count-badge" id="postsCount"></span></button>
     </div>
 
     <div class="tab-content active" id="tabContent-orders">
@@ -90,6 +91,65 @@
             <h3>🪑 সব প্রোডাক্ট</h3>
             <button class="small-btn" style="margin-bottom:14px;" onclick="exportProductsToCSV()">📥 CSV ডাউনলোড করুন (ব্যাকআপ)</button>
             <div id="productsList">লোড হচ্ছে...</div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tabContent-posts">
+        <div class="card">
+            <h3 id="postFormTitle">➕ নতুন পোস্ট যোগ করুন</h3>
+            <input type="hidden" id="editingPostId" value="">
+
+            <label>প্রোডাক্টের নাম — যেমন: কাউন্টার চেয়ার-কালো</label>
+            <input type="text" id="postName" placeholder="কাউন্টার চেয়ার-কালো">
+
+            <label>ক্যাটাগরি/eyebrow ট্যাগ — যেমন: ক্লোজ কালেকশন</label>
+            <input type="text" id="postTag" placeholder="ক্লোজ কালেকশন">
+
+            <label>দাম (টাকা, শুধু সংখ্যা)</label>
+            <input type="number" id="postPrice" placeholder="3500">
+
+            <label>দামের ইউনিট লেবেল</label>
+            <input type="text" id="postPriceUnit" placeholder="প্রতি পিস" value="প্রতি পিস">
+
+            <label>ছবির ফাইলের নাম (images ফোল্ডারে যেই নামে আছে) — যেমন: chair1.jpeg</label>
+            <input type="text" id="postImage" placeholder="chair1.jpeg">
+
+            <label>Slug (ইংরেজি, স্পেস ছাড়া, ইউনিক, .html ছাড়া) — যেমন: kaunter-chair-kalo</label>
+            <input type="text" id="postSlug" placeholder="new-post-slug">
+
+            <label>SEO মেটা বিবরণ (গুগল সার্চে যেই লাইনটা দেখাবে, ১৫০-১৬০ অক্ষরের মধ্যে রাখুন)</label>
+            <input type="text" id="postMetaDesc" placeholder="মজবুত স্টিল ফ্রেম, আরামদায়ক কুশন... দাম ৳৩,৫০০। ১ বছর গ্যারান্টি।">
+
+            <label>স্পেসিফিকেশন — প্রতি লাইনে "লেবেল: মান" ফরম্যাটে লিখুন</label>
+            <textarea id="postSpecs" rows="6" placeholder="ফ্রেম: সলিড স্টিল, পাউডার কোটেড
+উচ্চতা: সমন্বয়যোগ্য (গ্যাস লিফট)
+কুশন: PU লেদার, ঘন ফোম
+রঙ: কালো
+গ্যারান্টি: ১ বছর
+ডেলিভারি: সমগ্র বাংলাদেশ জুড়ে"></textarea>
+
+            <label>বিস্তারিত বিবরণ — প্রতিটা প্যারাগ্রাফের মাঝে একটা খালি লাইন রাখুন</label>
+            <textarea id="postDescription" rows="10" placeholder="প্রথম প্যারাগ্রাফ...
+
+দ্বিতীয় প্যারাগ্রাফ...
+
+তৃতীয় প্যারাগ্রাফ..."></textarea>
+
+            <label>ক্রম নম্বর (লিস্টিং পেজে কোন পজিশনে দেখাবে)</label>
+            <input type="number" id="postOrder" placeholder="5">
+
+            <button onclick="savePost()" id="savePostBtn">পোস্ট সেভ করুন</button>
+            <button onclick="downloadPostHtml()" id="downloadPostBtn" style="background:var(--sage); margin-top:8px;">📥 HTML ফাইল ডাউনলোড করুন (GitHub-এ আপলোডের জন্য)</button>
+            <button onclick="cancelPostEdit()" id="cancelPostEditBtn" style="background:#999; display:none; margin-top:8px;">বাতিল করুন</button>
+            <p id="postFormMsg" style="font-size:13px; margin-top:8px;"></p>
+            <p style="font-size:12.5px; margin-top:10px; color:#6b7690; line-height:1.6;">
+                ℹ️ সেভ করলে পোস্টটা products পেজের লিস্টিং-এ (গ্রিডে) সাথে সাথে দেখা যাবে। কিন্তু প্রোডাক্টের নিজস্ব বিস্তারিত পেজ (SEO সহ) লাইভ করতে — "HTML ফাইল ডাউনলোড করুন" বাটনে ক্লিক করে ফাইলটা ডাউনলোড করে, সেটা আপনার GitHub রিপোর প্রোডাক্টস ফোল্ডারে আপলোড করে দিন (ফাইলের নাম হবে slug.html)।
+            </p>
+        </div>
+
+        <div class="card">
+            <h3>📝 সব পোস্ট</h3>
+            <div id="postsList">লোড হচ্ছে...</div>
         </div>
     </div>
 

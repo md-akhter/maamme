@@ -34,12 +34,18 @@
             color:var(--text-dark);
         }
 
-        input{
+        input, textarea{
             width:100%;
             padding:12px;
             margin:10px 0;
             border:1px solid #ccc;
             border-radius:5px;
+        }
+
+        textarea{
+            font-family:Arial,sans-serif;
+            resize:vertical;
+            line-height:1.5;
         }
 
         button{

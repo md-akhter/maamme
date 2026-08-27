@@ -46,6 +46,7 @@ auth.onAuthStateChanged((user) => {
     loadOrders();
     loadProducts();
     loadComplaints();
+    loadPosts();
   } else {
     document.getElementById("login").style.display = "block";
     document.getElementById("dashboard").style.display = "none";
@@ -416,6 +417,469 @@ function deleteProduct(id) {
       alert("ডিলিট করতে সমস্যা হয়েছে।");
       console.error("Product delete error:", err);
     });
+}
+
+
+// ============================================================
+// Posts (products/index.html পেজের SEO প্রোডাক্ট পোস্ট) — Add / Edit / Delete
+// + প্রতিটা পোস্টের জন্য আলাদা SEO-friendly স্ট্যাটিক HTML ফাইল জেনারেট করে ডাউনলোড
+// ============================================================
+
+let allPosts = [];
+
+function loadPosts() {
+  const list = document.getElementById("postsList");
+  list.innerHTML = "লোড হচ্ছে...";
+
+  db.collection("posts").orderBy("order", "asc").get()
+    .then((snapshot) => {
+      allPosts = [];
+      snapshot.forEach((doc) => allPosts.push({ id: doc.id, ...doc.data() }));
+      document.getElementById('postsCount').textContent = snapshot.size ? snapshot.size : '';
+      if (snapshot.empty) {
+        list.innerHTML = "<p>এখনো কোনো পোস্ট নেই।</p>";
+        return;
+      }
+      let html = "";
+      const total = snapshot.size;
+      allPosts.forEach((p, index) => {
+        const position = index + 1;
+        html += `
+          <div class="order-item">
+            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>${formatTakaBn(p.price)}</span></div>
+            <div class="order-note">${escapeHtml(p.tag || '')} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+            <div class="status-row">
+              <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}">✏️ এডিট</button>
+              <button class="small-btn" data-id="${escapeHtml(p.id)}" data-action="download">📥 HTML</button>
+              <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}">🗑️ ডিলিট</button>
+            </div>
+          </div>`;
+      });
+      list.innerHTML = html;
+
+      document.querySelectorAll('#postsList .edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editPost(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('#postsList .delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deletePost(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('#postsList [data-action="download"]').forEach(btn => {
+        btn.addEventListener('click', () => downloadExistingPostHtml(btn.getAttribute('data-id')));
+      });
+    })
+    .catch((err) => {
+      list.innerHTML = "<p>পোস্ট লোড করতে সমস্যা হয়েছে।</p>";
+      console.error("Posts load error:", err);
+    });
+}
+
+// টেক্সটএরিয়াতে "লেবেল: মান" আকারে প্রতি লাইনে লেখা স্পেক লিস্টকে array-তে পার্স করে
+function parseSpecs(text) {
+  return text.split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const idx = line.indexOf(':');
+      if (idx === -1) return { label: line, value: '' };
+      return { label: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
+    });
+}
+
+function specsToText(specs) {
+  if (!Array.isArray(specs)) return '';
+  return specs.map(s => `${s.label}: ${s.value}`).join('\n');
+}
+
+// খালি লাইন দিয়ে আলাদা করা প্যারাগ্রাফগুলোকে array-তে ভাগ করে
+function parseParagraphs(text) {
+  return text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+}
+
+function toBanglaNumber(num) {
+  const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(num).replace(/[0-9]/g, d => bn[d]);
+}
+
+function formatTakaBn(amount) {
+  const grouped = Number(amount || 0).toLocaleString('en-IN');
+  return '৳ ' + toBanglaNumber(grouped);
+}
+
+function readPostForm() {
+  return {
+    name: document.getElementById("postName").value.trim(),
+    tag: document.getElementById("postTag").value.trim(),
+    price: Number(document.getElementById("postPrice").value) || 0,
+    priceUnit: document.getElementById("postPriceUnit").value.trim() || 'প্রতি পিস',
+    image: document.getElementById("postImage").value.trim(),
+    slug: document.getElementById("postSlug").value.trim(),
+    metaDesc: document.getElementById("postMetaDesc").value.trim(),
+    specs: parseSpecs(document.getElementById("postSpecs").value),
+    description: parseParagraphs(document.getElementById("postDescription").value),
+    order: Number(document.getElementById("postOrder").value) || 0
+  };
+}
+
+function savePost() {
+  const msg = document.getElementById("postFormMsg");
+  const editingId = document.getElementById("editingPostId").value;
+  const post = readPostForm();
+
+  if (!post.name || !post.price || !post.image || !post.slug || post.description.length === 0) {
+    msg.style.color = "#c0533e";
+    msg.textContent = "নাম, দাম, ছবি, slug ও বিবরণ — এগুলো অবশ্যই দিতে হবে।";
+    return;
+  }
+
+  // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে (products ট্যাবের প্যাটার্নেই) — যাতে
+  // Firestore doc ID আর আসল .html ফাইলের নাম সবসময় এক থাকে
+  db.collection("posts").doc(post.slug).set(post)
+    .then(() => {
+      if (editingId && editingId !== post.slug) {
+        return db.collection("posts").doc(editingId).delete();
+      }
+    })
+    .then(() => {
+      msg.style.color = "#2e7d32";
+      msg.textContent = editingId ? "✅ পোস্ট আপডেট হয়েছে। এখন চাইলে HTML ফাইলও নতুন করে ডাউনলোড করে আপলোড করুন।" : "✅ পোস্ট যোগ হয়েছে। এখন \"HTML ফাইল ডাউনলোড করুন\" বাটনে ক্লিক করে ফাইলটা GitHub-এ আপলোড করুন।";
+      cancelPostEdit();
+      loadPosts();
+    })
+    .catch((err) => {
+      msg.style.color = "#c0533e";
+      msg.textContent = "সেভ করতে সমস্যা হয়েছে: " + err.message;
+      console.error("Post save error:", err);
+    });
+}
+
+function editPost(id) {
+  db.collection("posts").doc(id).get().then((doc) => {
+    if (!doc.exists) return;
+    const p = doc.data();
+    document.getElementById("editingPostId").value = id;
+    document.getElementById("postName").value = p.name || '';
+    document.getElementById("postTag").value = p.tag || '';
+    document.getElementById("postPrice").value = p.price || '';
+    document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
+    document.getElementById("postImage").value = p.image || '';
+    document.getElementById("postSlug").value = p.slug || id;
+    document.getElementById("postMetaDesc").value = p.metaDesc || '';
+    document.getElementById("postSpecs").value = specsToText(p.specs);
+    document.getElementById("postDescription").value = (p.description || []).join('\n\n');
+    document.getElementById("postOrder").value = p.order || '';
+
+    document.getElementById("postFormTitle").textContent = "✏️ পোস্ট এডিট করুন";
+    document.getElementById("savePostBtn").textContent = "আপডেট করুন";
+    document.getElementById("cancelPostEditBtn").style.display = "block";
+    document.getElementById("postFormTitle").scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+function cancelPostEdit() {
+  document.getElementById("editingPostId").value = "";
+  document.getElementById("postName").value = '';
+  document.getElementById("postTag").value = '';
+  document.getElementById("postPrice").value = '';
+  document.getElementById("postPriceUnit").value = 'প্রতি পিস';
+  document.getElementById("postImage").value = '';
+  document.getElementById("postSlug").value = '';
+  document.getElementById("postMetaDesc").value = '';
+  document.getElementById("postSpecs").value = '';
+  document.getElementById("postDescription").value = '';
+  document.getElementById("postOrder").value = '';
+
+  document.getElementById("postFormTitle").textContent = "➕ নতুন পোস্ট যোগ করুন";
+  document.getElementById("savePostBtn").textContent = "পোস্ট সেভ করুন";
+  document.getElementById("cancelPostEditBtn").style.display = "none";
+}
+
+function deletePost(id) {
+  if (!confirm("আপনি কি নিশ্চিত এই পোস্টটি ডিলিট করতে চান? (মনে রাখবেন: এটা শুধু লিস্টিং গ্রিড থেকে সরাবে — GitHub-এ থাকা আসল .html ফাইলটা আলাদাভাবে ম্যানুয়ালি ডিলিট করতে হবে, নাহলে পুরনো লিংকে পেজটা তখনও খোলা থাকবে)")) return;
+
+  db.collection("posts").doc(id).delete()
+    .then(() => {
+      loadPosts();
+    })
+    .catch((err) => {
+      alert("ডিলিট করতে সমস্যা হয়েছে।");
+      console.error("Post delete error:", err);
+    });
+}
+
+// ============================================================
+// পোস্টের জন্য SEO সহ পূর্ণাঙ্গ স্ট্যাটিক HTML ফাইল জেনারেট করা
+// (kaunter-chair-*.html ফাইলগুলোর ঠিক একই টেমপ্লেট অনুসরণ করে)
+// ============================================================
+
+const SITE_ORIGIN = 'https://maamme.com';
+
+function buildRelatedLinksHtml(currentSlug) {
+  const others = allPosts.filter(p => p.slug !== currentSlug).slice(0, 3);
+  let html = `<a href="index.html">সব প্রোডাক্ট দেখুন</a>`;
+  others.forEach(p => {
+    html += `\n        <a href="${escapeHtml(p.slug)}.html">${escapeHtml(p.name)}</a>`;
+  });
+  return html;
+}
+
+function buildPostHtml(post) {
+  const priceDisplay = formatTakaBn(post.price);
+  const specListHtml = post.specs.map(s =>
+    `          <li><span>${escapeHtml(s.label)}</span><span>${escapeHtml(s.value)}</span></li>`
+  ).join('\n');
+  const descHtml = post.description.map(p => `      <p>\n        ${escapeHtml(p)}\n      </p>`).join('\n');
+  const relatedHtml = buildRelatedLinksHtml(post.slug);
+  const jsonLdDesc = (post.metaDesc || post.description[0] || '').replace(/"/g, '\\"');
+  const title = `${post.name} — দাম ও বৈশিষ্ট্য | Maamme.com`;
+  const pageUrl = `${SITE_ORIGIN}/products/${post.slug}.html`;
+  const imageUrl = `${SITE_ORIGIN}/images/${post.image}`;
+
+  return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(post.metaDesc)}">
+<link rel="canonical" href="${pageUrl}">
+
+<meta property="og:type" content="product">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(post.metaDesc)}">
+<meta property="og:image" content="${imageUrl}">
+<meta property="og:url" content="${pageUrl}">
+<meta property="og:locale" content="bn_BD">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(post.metaDesc)}">
+<meta name="twitter:image" content="${imageUrl}">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="../style.css?v=6">
+<style>
+  .product-section{padding:44px 0 64px;}
+  .breadcrumb{font-size:13px; color:#6b7690; margin-bottom:22px;}
+  .breadcrumb a{color:var(--brass); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .product-layout{display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:start;}
+  .product-photo-wrap{border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.18);}
+  .product-photo-wrap img{width:100%; aspect-ratio:4/5; object-fit:cover;}
+
+  .product-info .eyebrow{margin-bottom:10px;}
+  .product-info h1{font-size:clamp(26px,3.5vw,36px); font-weight:500; line-height:1.15; margin:0 0 14px;}
+  .product-price{font-family:'Fraunces',serif; font-weight:600; font-size:26px; color:var(--walnut-950); margin-bottom:18px;}
+  .product-price span{font-family:'Hind Siliguri',sans-serif; font-size:13px; font-weight:400; color:#6b7690; margin-left:6px;}
+
+  .product-order-btn{display:inline-block; text-align:center; text-decoration:none;}
+
+  .spec-list{list-style:none; padding:0; margin:22px 0; font-size:14.5px; color:#3d4a63;}
+  .spec-list li{padding:8px 0; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:12px;}
+  .spec-list li span:first-child{color:#6b7690;}
+
+  .product-desc{margin-top:36px; max-width:760px;}
+  .product-desc h2{font-size:22px; font-weight:500; margin-bottom:14px;}
+  .product-desc p{font-size:15.5px; line-height:1.85; color:#3d4a63; margin-bottom:16px;}
+
+  .related-section{margin-top:48px; padding-top:36px; border-top:1px solid var(--line);}
+  .related-section h2{font-size:20px; font-weight:500; margin-bottom:18px;}
+  .related-links{display:flex; flex-wrap:wrap; gap:12px;}
+  .related-links a{
+    display:inline-block; padding:9px 16px; border:1px solid var(--line); border-radius:20px;
+    text-decoration:none; color:var(--text-dark); font-size:13.5px; transition:all .15s ease;
+  }
+  .related-links a:hover{border-color:var(--brass); color:var(--brass);}
+
+  @media (max-width:800px){
+    .product-layout{grid-template-columns:1fr; gap:26px;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 10px;}
+    .product-section{padding:26px 0 40px;}
+    .product-info h1{font-size:24px;}
+    .product-price{font-size:22px;}
+  }
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "${escapeHtml(post.name).replace(/"/g, '\\"')}",
+  "image": "${imageUrl}",
+  "description": "${jsonLdDesc}",
+  "sku": "${post.slug}",
+  "brand": {
+    "@type": "Brand",
+    "name": "Maamme.com"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "${pageUrl}",
+    "priceCurrency": "BDT",
+    "price": "${post.price}",
+    "availability": "https://schema.org/InStock",
+    "itemCondition": "https://schema.org/NewCondition"
+  }
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo"><a href="../index.html"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
+    <ul class="nav-links">
+      <li><a href="../index.html">হোম</a></li>
+      <li><a href="index.html">প্রোডাক্ট</a></li>
+      <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
+    </ul>
+    <div class="nav-actions" id="navActions">
+      <div class="mobile-nav-links">
+        <a href="../index.html">হোম</a>
+        <a href="index.html">প্রোডাক্ট</a>
+        <a href="../about-us.html">আমাদের সম্পর্কে</a>
+      </div>
+      <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
+      <a href="../index.html#order" class="nav-cta">অর্ডার করুন</a>
+    </div>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="মেনু" aria-haspopup="true" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<section class="product-section">
+  <div class="wrap">
+
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href="../index.html">Home</a> &raquo; <a href="index.html">Products</a> &raquo; <span>${escapeHtml(post.name)}</span>
+    </nav>
+
+    <div class="product-layout">
+
+      <div class="product-photo-wrap">
+        <img src="../images/${escapeHtml(post.image)}" alt="${escapeHtml(post.name)}">
+      </div>
+
+      <div class="product-info">
+        <div class="eyebrow">${escapeHtml(post.tag || '')}</div>
+        <h1>${escapeHtml(post.name)}</h1>
+        <div class="product-price">${priceDisplay}<span>${escapeHtml(post.priceUnit)}</span></div>
+
+        <a href="../index.html#order" class="submit-btn product-order-btn" style="width:auto; padding:14px 32px;">অর্ডার করুন</a>
+
+        <ul class="spec-list">
+${specListHtml}
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="product-desc">
+      <h2>বিস্তারিত বিবরণ</h2>
+${descHtml}
+    </div>
+
+    <div class="related-section">
+      <h2>একই কালেকশনের অন্যান্য প্রোডাক্ট</h2>
+      <div class="related-links">
+        ${relatedHtml}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">MAAMME.COM</div>
+      <ul class="foot-links">
+        <li><a href="../index.html#products">সংগ্রহ</a></li>
+        <li><a href="../index.html#about">কারুকাজ</a></li>
+        <li><a href="../index.html#process">প্রক্রিয়া</a></li>
+        <li><a href="../index.html#order">অর্ডার</a></li>
+        <li><a href="../track.html">অর্ডার ট্র্যাক করুন</a></li>
+        <li><a href="../complain.html">অভিযোগ জানান</a></li>
+        <li><a href="https://www.facebook.com/maammebd/" target="_blank" rel="noopener">ফেসবুক পেজ</a></li>
+      </ul>
+    </div>
+    <div class="foot-bottom">
+      <span>© ২০২৬ MAAMME.COM — হস্তনির্মিত চেয়ার। সর্বস্বত্ব সংরক্ষিত।</span>
+      <span>ঢাকা, বাংলাদেশ</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const navActionsMenu = document.getElementById('navActions');
+
+  function toggleMobileMenu() {
+    if (!navActionsMenu) return;
+    const isOpen = navActionsMenu.classList.toggle('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function closeMobileMenu() {
+    if (!navActionsMenu) return;
+    navActionsMenu.classList.remove('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (navActionsMenu) {
+    navActionsMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', closeMobileMenu);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!navActionsMenu || !navActionsMenu.classList.contains('open')) return;
+    if (navActionsMenu.contains(e.target) || (mobileMenuToggle && mobileMenuToggle.contains(e.target))) return;
+    closeMobileMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 560) closeMobileMenu();
+  });
+</script>
+
+</body>
+</html>
+`;
+}
+
+function downloadHtmlFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// ফর্মে যা আছে তা দিয়েই সরাসরি HTML জেনারেট করে ডাউনলোড দেয় (সেভ করা লাগে না)
+function downloadPostHtml() {
+  const post = readPostForm();
+  if (!post.name || !post.price || !post.image || !post.slug || post.description.length === 0) {
+    alert("নাম, দাম, ছবি, slug ও বিবরণ — এগুলো আগে পূরণ করুন।");
+    return;
+  }
+  const html = buildPostHtml(post);
+  downloadHtmlFile(`${post.slug}.html`, html);
+}
+
+// লিস্টে থাকা কোনো পোস্টের জন্য (Firestore-এ যা সেভ করা আছে সেটা দিয়ে) HTML ডাউনলোড করে
+function downloadExistingPostHtml(id) {
+  const p = allPosts.find(x => x.id === id);
+  if (!p) return;
+  const html = buildPostHtml(p);
+  downloadHtmlFile(`${p.slug || id}.html`, html);
 }
 
 

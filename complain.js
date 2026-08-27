@@ -132,11 +132,6 @@ form.addEventListener('submit', (e) => {
             submitBtn.disabled = false;
             submitBtn.textContent = 'অভিযোগ জমা দিন';
             showMsg('ধন্যবাদ! আপনার অভিযোগ জমা হয়েছে — আমরা শীঘ্রই যোগাযোগ করব।', false);
-
-            // Meta Pixel — কাস্টমার অভিযোগ জমা দিয়েছে
-            if (window.fbq) {
-              fbq('track', 'Contact');
-            }
           });
         });
     })

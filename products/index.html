@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>সব প্রোডাক্ট — স্টিল চেয়ার ও ফার্নিচার সংগ্রহ | Maamme.com</title>
+<meta name="description" content="Maamme.com-এর সম্পূর্ণ স্টিল চেয়ার ও ফার্নিচার সংগ্রহ দেখুন — কাউন্টার চেয়ার ও আরও অনেক ডিজাইন, দাম ও বিস্তারিত বিবরণসহ।">
+<link rel="canonical" href="https://maamme.vercel.app/products/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="সব প্রোডাক্ট — স্টিল চেয়ার ও ফার্নিচার সংগ্রহ | Maamme.com">
+<meta property="og:description" content="Maamme.com-এর সম্পূর্ণ স্টিল চেয়ার ও ফার্নিচার সংগ্রহ দেখুন — দাম ও বিস্তারিত বিবরণসহ।">
+<meta property="og:url" content="https://maamme.vercel.app/products/">
+<meta property="og:locale" content="bn_BD">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="../style.css?v=6">
+<style>
+  /* এই পেজের জন্য কিছু addition — বাকি সব ../style.css থেকে আসছে (track.html/complain.html-এর প্যাটার্নেই) */
+  .listing-section{padding:44px 0 64px;}
+  .breadcrumb{font-size:13px; color:#6b7690; margin-bottom:18px;}
+  .breadcrumb a{color:var(--brass); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .listing-head{max-width:680px; margin-bottom:36px;}
+  .listing-head h1{font-size:clamp(28px,4vw,40px); font-weight:500; margin:14px 0 12px; line-height:1.15;}
+  .listing-head p{font-size:16px; line-height:1.7; color:#3d4a63;}
+
+  .product-grid-full{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:22px;
+  }
+  .product-card-link{text-decoration:none; color:inherit; display:block;}
+  .product-card-link .card-body h2{font-size:16.5px; font-weight:600; margin:10px 0 4px; color:var(--text-dark);}
+  .product-card-link .price-line{
+    font-family:'Fraunces',serif; font-weight:600; font-size:15px; color:var(--walnut-950); margin-top:6px;
+  }
+  .product-card-link .price-line span{font-family:'Hind Siliguri',sans-serif; font-size:11.5px; font-weight:400; color:#6b7690; margin-left:4px;}
+
+  @media (max-width:560px){
+    .wrap{padding:0 10px;}
+    .listing-section{padding:26px 0 40px;}
+    .product-grid-full{grid-template-columns:repeat(2,1fr); gap:12px;}
+    .product-card-link .card-body{padding:12px 14px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo"><a href="../index.html"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
+    <ul class="nav-links">
+      <li><a href="../index.html">হোম</a></li>
+      <li><a href="index.html">প্রোডাক্ট</a></li>
+      <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
+    </ul>
+    <div class="nav-actions" id="navActions">
+      <div class="mobile-nav-links">
+        <a href="../index.html">হোম</a>
+        <a href="index.html">প্রোডাক্ট</a>
+        <a href="../about-us.html">আমাদের সম্পর্কে</a>
+      </div>
+      <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
+      <a href="../index.html#order" class="nav-cta">অর্ডার করুন</a>
+    </div>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="মেনু" aria-haspopup="true" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<section class="listing-section">
+  <div class="wrap">
+
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href="../index.html">Home</a> &raquo; <span>Products</span>
+    </nav>
+
+    <div class="listing-head">
+      <div class="eyebrow">আমাদের সংগ্রহ</div>
+      <h1>স্টিল চেয়ার ও ফার্নিচার — সম্পূর্ণ সংগ্রহ</h1>
+      <p>প্রতিটা প্রোডাক্টের বিস্তারিত বিবরণ, মাপ, দাম ও ছবি দেখতে নিচের যেকোনো প্রোডাক্টে ক্লিক করুন।</p>
+    </div>
+
+    <!-- প্রোডাক্ট কার্ডগুলো এখন এডমিন প্যানেলের "পোস্ট" ট্যাব থেকে ম্যানেজ করা Firestore
+         posts কালেকশন থেকে posts-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় -->
+    <div class="product-grid-full" id="postsGrid">
+      <p style="grid-column:1/-1; color:rgba(255,255,255,0.7);">লোড হচ্ছে...</p>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">MAAMME.COM</div>
+      <ul class="foot-links">
+        <li><a href="../index.html#products">সংগ্রহ</a></li>
+        <li><a href="../index.html#about">কারুকাজ</a></li>
+        <li><a href="../index.html#process">প্রক্রিয়া</a></li>
+        <li><a href="../index.html#order">অর্ডার</a></li>
+        <li><a href="../track.html">অর্ডার ট্র্যাক করুন</a></li>
+        <li><a href="../complain.html">অভিযোগ জানান</a></li>
+        <li><a href="https://www.facebook.com/mayarghorbd/" target="_blank" rel="noopener">ফেসবুক পেজ</a></li>
+      </ul>
+    </div>
+    <div class="foot-bottom">
+      <span>© ২০২৬ MAAMME.COM — হস্তনির্মিত চেয়ার। সর্বস্বত্ব সংরক্ষিত।</span>
+      <span>ঢাকা, বাংলাদেশ</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // index.html-এ script.js-এ থাকা মোবাইল মেনু লজিকের হুবহু কপি — এই আলাদা পেজেও একই আচরণ
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const navActionsMenu = document.getElementById('navActions');
+
+  function toggleMobileMenu() {
+    if (!navActionsMenu) return;
+    const isOpen = navActionsMenu.classList.toggle('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function closeMobileMenu() {
+    if (!navActionsMenu) return;
+    navActionsMenu.classList.remove('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (navActionsMenu) {
+    navActionsMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', closeMobileMenu);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!navActionsMenu || !navActionsMenu.classList.contains('open')) return;
+    if (navActionsMenu.contains(e.target) || (mobileMenuToggle && mobileMenuToggle.contains(e.target))) return;
+    closeMobileMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 560) closeMobileMenu();
+  });
+</script>
+
+<!-- Firebase SDK — posts কালেকশন থেকে প্রোডাক্ট গ্রিড লোড করার জন্য -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="../firebase-init.js"></script>
+<script src="posts-grid.js"></script>
+
+</body>
+</html>
