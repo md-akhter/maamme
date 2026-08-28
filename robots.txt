@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 
-Sitemap: https://maamme.vercel.app/sitemap.xml
+Sitemap: https://maamme.com/sitemap.xml
