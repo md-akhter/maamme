@@ -276,9 +276,78 @@ function updateComplaintStatus(id, newStatus) {
 
 // ============================================================
 // Products — Add / Edit / Delete
+// (Admin Product Management: Home / Furniture / Fashion category
+//  + per-category sub-category, on top of the same "products"
+//  collection and fields that were already working before.)
 // ============================================================
 
+// নতুন Sub-category ভবিষ্যতে যোগ করতে চাইলে শুধু এই লিস্টে একটা লাইন
+// যোগ করলেই admin ফর্মের dropdown-এ চলে আসবে — আলাদা কোনো কোড বদলাতে হবে না।
+const PRODUCT_SUB_CATEGORY_OPTIONS = {
+  furniture: [
+    { value: 'office-chair',    label: 'Office Chair' },
+    { value: 'dining-chair',    label: 'Dining Chair' },
+    { value: 'sofa',            label: 'Sofa' },
+    { value: 'table',           label: 'Table' },
+    { value: 'bed',             label: 'Bed' },
+    { value: 'almira',          label: 'Almira' },
+    { value: 'other-furniture', label: 'Other Furniture' }
+  ],
+  fashion: [
+    { value: 'three-piece', label: 'Three Piece' },
+    { value: 'one-piece',   label: 'One Piece' },
+    { value: 'two-piece',   label: 'Two Piece' },
+    { value: 'panjabi',     label: 'Panjabi' },
+    { value: 'shirt',       label: 'Shirt' },
+    { value: 't-shirt',     label: 'T-Shirt' },
+    { value: 'pant',        label: 'Pant' },
+    { value: 'shoe',        label: 'Shoe' },
+    { value: 'other-fashion', label: 'Other Fashion' }
+  ]
+};
+
+const PRODUCT_CATEGORY_LABELS = { home: 'Home', furniture: 'Furniture', fashion: 'Fashion' };
+
+function productCategoryLabel(key) {
+  return PRODUCT_CATEGORY_LABELS[key] || 'Home';
+}
+
+function productSubCategoryLabel(category, key) {
+  const options = PRODUCT_SUB_CATEGORY_OPTIONS[category] || [];
+  const match = options.find(o => o.value === key);
+  return match ? match.label : '';
+}
+
+// "Category" dropdown বদলালে "Sub-category" dropdown-এর অপশনও সেই অনুযায়ী বদলে যায়।
+// Home-এর জন্য কোনো sub-category নেই, তাই সেই ক্ষেত্রে পুরো row-টাই লুকানো থাকে।
+function updateProductSubCategoryOptions(selectedSubCategory) {
+  const category = document.getElementById("pCategory").value;
+  const subWrap = document.getElementById("pSubCategoryWrap");
+  const subSelect = document.getElementById("pSubCategory");
+  const options = PRODUCT_SUB_CATEGORY_OPTIONS[category] || [];
+
+  if (options.length === 0) {
+    subWrap.style.display = "none";
+    subSelect.innerHTML = "";
+    return;
+  }
+
+  subWrap.style.display = "block";
+  subSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  if (selectedSubCategory && options.some(o => o.value === selectedSubCategory)) {
+    subSelect.value = selectedSubCategory;
+  }
+}
+updateProductSubCategoryOptions();
+
 let allProducts = [];
+const PRODUCT_CATEGORY_FILTERS = [
+  { key: 'all', label: 'সব' },
+  { key: 'home', label: 'Home' },
+  { key: 'furniture', label: 'Furniture' },
+  { key: 'fashion', label: 'Fashion' }
+];
+let currentProductFilter = 'all';
 
 function loadProducts() {
   const list = document.getElementById("productsList");
@@ -288,36 +357,8 @@ function loadProducts() {
     .then((snapshot) => {
       allProducts = [];
       snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
-      document.getElementById('productsCount').textContent = snapshot.size ? snapshot.size : '';
-      if (snapshot.empty) {
-        list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
-        return;
-      }
-      let html = "";
-      const total = snapshot.size;
-      snapshot.forEach((doc, index) => {
-        const p = doc.data();
-        const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
-        const position = index + 1;
-        html += `
-          <div class="order-item">
-            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
-            <div>${escapeHtml(p.fullName)}</div>
-            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
-            <div class="status-row">
-              <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
-              <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
-            </div>
-          </div>`;
-      });
-      list.innerHTML = html;
-
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id')));
-      });
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id')));
-      });
+      document.getElementById('productsCount').textContent = allProducts.length ? allProducts.length : '';
+      renderProductsList();
     })
     .catch((err) => {
       list.innerHTML = "<p>প্রোডাক্ট লোড করতে সমস্যা হয়েছে।</p>";
@@ -325,11 +366,80 @@ function loadProducts() {
     });
 }
 
+// ক্যাশ করা allProducts থেকেই ক্যাটাগরি ফিল্টার বার + লিস্ট বানায় — Orders ট্যাবের
+// মতোই প্যাটার্ন, কোনো নতুন Firestore কল লাগে না
+function renderProductsList() {
+  const list = document.getElementById("productsList");
+
+  if (allProducts.length === 0) {
+    list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
+    return;
+  }
+
+  const counts = { all: allProducts.length, home: 0, furniture: 0, fashion: 0 };
+  allProducts.forEach(p => {
+    const cat = p.category || 'home';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+
+  let statsHtml = '<div class="stats-bar">';
+  PRODUCT_CATEGORY_FILTERS.forEach(f => {
+    statsHtml += `<div class="stat-chip ${currentProductFilter === f.key ? 'active' : ''}" data-key="${f.key}">${f.label} <span class="stat-count">${counts[f.key] || 0}</span></div>`;
+  });
+  statsHtml += '</div>';
+
+  const filtered = currentProductFilter === 'all' ? allProducts : allProducts.filter(p => (p.category || 'home') === currentProductFilter);
+  const total = filtered.length;
+
+  let itemsHtml = '';
+  if (filtered.length === 0) {
+    itemsHtml = '<p style="padding:10px 0;">এই ক্যাটাগরিতে কোনো প্রোডাক্ট নেই।</p>';
+  } else {
+    filtered.forEach((p, index) => {
+      const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
+      const position = index + 1;
+      const catLabel = productCategoryLabel(p.category || 'home');
+      const subLabel = productSubCategoryLabel(p.category || 'home', p.subCategory);
+      const catBadge = subLabel ? `${catLabel} · ${subLabel}` : catLabel;
+      itemsHtml += `
+        <div class="order-item">
+          <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
+          <div>${escapeHtml(p.fullName)}</div>
+          <div class="order-note">${escapeHtml(catBadge)} · ${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+          <div class="status-row">
+            <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}">✏️ এডিট</button>
+            <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}">🗑️ ডিলিট</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  list.innerHTML = statsHtml + itemsHtml;
+
+  list.querySelectorAll('.stat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      currentProductFilter = chip.getAttribute('data-key');
+      renderProductsList();
+    });
+  });
+  list.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id')));
+  });
+  list.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id')));
+  });
+}
+
 // ফর্মের ভ্যালু দিয়ে নতুন প্রোডাক্ট তৈরি করে, অথবা এডিট মোডে থাকলে আপডেট করে
 function saveProduct() {
   const msg = document.getElementById("productFormMsg");
   const editingId = document.getElementById("editingProductId").value;
 
+  const category = document.getElementById("pCategory").value;
+  // Home-এর কোনো sub-category নেই, তাই এই ক্ষেত্রে খালি রাখা হচ্ছে
+  const subCategory = (PRODUCT_SUB_CATEGORY_OPTIONS[category] || []).length
+    ? document.getElementById("pSubCategory").value
+    : '';
   const name = document.getElementById("pName").value.trim();
   const fullName = document.getElementById("pFullName").value.trim();
   const tag = document.getElementById("pTag").value.trim();
@@ -345,7 +455,13 @@ function saveProduct() {
     return;
   }
 
-  const productData = { name, fullName, tag, description, price, image, slug, order };
+  if ((category === 'furniture' || category === 'fashion') && !subCategory) {
+    msg.style.color = "#c0533e";
+    msg.textContent = "Furniture বা Fashion বাছাই করলে Sub-category-ও বাছাই করতে হবে।";
+    return;
+  }
+
+  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
   // এডিট মোডে slug বদলে গেলে এটা আসলে একটা নতুন doc ID-তে সেভ হয়, তাই পুরনো
@@ -374,6 +490,8 @@ function editProduct(id) {
     if (!doc.exists) return;
     const p = doc.data();
     document.getElementById("editingProductId").value = id;
+    document.getElementById("pCategory").value = p.category || 'home';
+    updateProductSubCategoryOptions(p.subCategory);
     document.getElementById("pName").value = p.name || '';
     document.getElementById("pFullName").value = p.fullName || '';
     document.getElementById("pTag").value = p.tag || '';
@@ -392,6 +510,8 @@ function editProduct(id) {
 
 function cancelEdit() {
   document.getElementById("editingProductId").value = "";
+  document.getElementById("pCategory").value = 'home';
+  updateProductSubCategoryOptions();
   document.getElementById("pName").value = '';
   document.getElementById("pFullName").value = '';
   document.getElementById("pTag").value = '';
@@ -505,9 +625,39 @@ function formatTakaBn(amount) {
   return '৳ ' + toBanglaNumber(grouped);
 }
 
+// ফার্নিচার/ফ্যাশন নেভ dropdown-এর সাথে মিলিয়ে সাব-ক্যাটাগরি অপশন — নতুন সাব-ক্যাটাগরি
+// নেভ মেনুতে (index.html) যোগ করলে এখানেও যোগ করতে হবে, তাহলেই admin ফর্মে দেখাবে
+const SUB_CATEGORY_OPTIONS = {
+  furniture: [
+    { value: 'steel-chair', label: 'স্টিল চেয়ার' },
+    { value: 'office-chair', label: 'অফিস চেয়ার' },
+    { value: 'dining-chair', label: 'ডাইনিং চেয়ার' },
+    { value: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
+  ],
+  fashion: [
+    { value: 'one-piece', label: 'ওয়ান পিস' },
+    { value: 'two-piece', label: 'টু পিস' },
+    { value: 'three-piece', label: 'থ্রি পিস' }
+  ]
+};
+
+// "ক্যাটাগরি" dropdown বদলালে "সাব-ক্যাটাগরি" dropdown-এর অপশনও সেই অনুযায়ী বদলে যায়
+function updatePostSubCategoryOptions(selectedSubCategory) {
+  const category = document.getElementById("postCategory").value;
+  const subSelect = document.getElementById("postSubCategory");
+  const options = SUB_CATEGORY_OPTIONS[category] || [];
+  subSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  if (selectedSubCategory && options.some(o => o.value === selectedSubCategory)) {
+    subSelect.value = selectedSubCategory;
+  }
+}
+updatePostSubCategoryOptions();
+
 function readPostForm() {
   return {
     name: document.getElementById("postName").value.trim(),
+    category: document.getElementById("postCategory").value,
+    subCategory: document.getElementById("postSubCategory").value,
     tag: document.getElementById("postTag").value.trim(),
     price: Number(document.getElementById("postPrice").value) || 0,
     priceUnit: document.getElementById("postPriceUnit").value.trim() || 'প্রতি পিস',
@@ -558,6 +708,8 @@ function editPost(id) {
     const p = doc.data();
     document.getElementById("editingPostId").value = id;
     document.getElementById("postName").value = p.name || '';
+    document.getElementById("postCategory").value = p.category || 'furniture';
+    updatePostSubCategoryOptions(p.subCategory);
     document.getElementById("postTag").value = p.tag || '';
     document.getElementById("postPrice").value = p.price || '';
     document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
@@ -578,6 +730,8 @@ function editPost(id) {
 function cancelPostEdit() {
   document.getElementById("editingPostId").value = "";
   document.getElementById("postName").value = '';
+  document.getElementById("postCategory").value = 'furniture';
+  updatePostSubCategoryOptions();
   document.getElementById("postTag").value = '';
   document.getElementById("postPrice").value = '';
   document.getElementById("postPriceUnit").value = 'প্রতি পিস';
@@ -957,9 +1111,11 @@ function exportProductsToCSV() {
     alert("ডাউনলোড করার মতো কোনো প্রোডাক্ট নেই।");
     return;
   }
-  const headers = ['Slug', 'নাম', 'পুরো নাম', 'ট্যাগ', 'বিবরণ', 'দাম (৳)', 'ছবি', 'ক্রম'];
+  const headers = ['Slug', 'Category', 'Sub-category', 'নাম', 'পুরো নাম', 'ট্যাগ', 'বিবরণ', 'দাম (৳)', 'ছবি', 'ক্রম'];
   const rows = allProducts.map(p => [
     p.slug || p.id || '',
+    productCategoryLabel(p.category || 'home'),
+    productSubCategoryLabel(p.category || 'home', p.subCategory),
     p.name || '',
     p.fullName || '',
     p.tag || '',
