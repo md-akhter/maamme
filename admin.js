@@ -276,100 +276,48 @@ function updateComplaintStatus(id, newStatus) {
 
 // ============================================================
 // Products — Add / Edit / Delete
-// (Admin Product Management: Home / Furniture / Fashion category
-//  + per-category sub-category, on top of the same "products"
-//  collection and fields that were already working before.)
 // ============================================================
 
-// নতুন Sub-category ভবিষ্যতে যোগ করতে চাইলে শুধু এই লিস্টে একটা লাইন
-// যোগ করলেই admin ফর্মের dropdown-এ চলে আসবে — আলাদা কোনো কোড বদলাতে হবে না।
-const PRODUCT_SUB_CATEGORY_OPTIONS = {
-  furniture: [
-    { value: 'office-chair',    label: 'Office Chair' },
-    { value: 'dining-chair',    label: 'Dining Chair' },
-    { value: 'sofa',            label: 'Sofa' },
-    { value: 'table',           label: 'Table' },
-    { value: 'bed',             label: 'Bed' },
-    { value: 'almira',          label: 'Almira' },
-    { value: 'other-furniture', label: 'Other Furniture' }
-  ],
-  fashion: [
-    { value: 'three-piece', label: 'Three Piece' },
-    { value: 'one-piece',   label: 'One Piece' },
-    { value: 'two-piece',   label: 'Two Piece' },
-    { value: 'panjabi',     label: 'Panjabi' },
-    { value: 'shirt',       label: 'Shirt' },
-    { value: 't-shirt',     label: 'T-Shirt' },
-    { value: 'pant',        label: 'Pant' },
-    { value: 'shoe',        label: 'Shoe' },
-    { value: 'other-fashion', label: 'Other Fashion' }
-  ]
-};
-
-const PRODUCT_CATEGORY_LABELS = { home: 'Home', furniture: 'Furniture', fashion: 'Fashion' };
-
-function productCategoryLabel(key) {
-  return PRODUCT_CATEGORY_LABELS[key] || 'Home';
-}
-
-function productSubCategoryLabel(category, key) {
-  const options = PRODUCT_SUB_CATEGORY_OPTIONS[category] || [];
-  const match = options.find(o => o.value === key);
-  return match ? match.label : '';
-}
-
-// "Category" dropdown বদলালে "Sub-category" dropdown-এর অপশনও সেই অনুযায়ী বদলে যায়।
-// Home-এর জন্য কোনো sub-category নেই, তাই সেই ক্ষেত্রে পুরো row-টাই লুকানো থাকে।
-function updateProductSubCategoryOptions(selectedSubCategory) {
-  const category = document.getElementById("pCategory").value;
-  const subWrap = document.getElementById("pSubCategoryWrap");
-  const subSelect = document.getElementById("pSubCategory");
-  const options = PRODUCT_SUB_CATEGORY_OPTIONS[category] || [];
-
-  if (options.length === 0) {
-    subWrap.style.display = "none";
-    subSelect.innerHTML = "";
-    return;
-  }
-
-  subWrap.style.display = "block";
-  subSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
-  if (selectedSubCategory && options.some(o => o.value === selectedSubCategory)) {
-    subSelect.value = selectedSubCategory;
-  }
-}
-updateProductSubCategoryOptions();
-
 let allProducts = [];
-let editingProductSource = ''; // 'products' (Home) বা 'posts' (Furniture/Fashion) — কোন collection থেকে এডিট হচ্ছে সেটা মনে রাখতে
-const PRODUCT_CATEGORY_FILTERS = [
-  { key: 'all', label: 'সব' },
-  { key: 'home', label: 'Home' },
-  { key: 'furniture', label: 'Furniture' },
-  { key: 'fashion', label: 'Fashion' }
-];
-let currentProductFilter = 'all';
 
-// "Admin Product Management" একটাই তালিকায় Home + Furniture + Fashion সব প্রোডাক্ট
-// দেখায়, কিন্তু আসলে দুইটা আলাদা Firestore collection থেকে ডেটা আসে:
-// - Home প্রোডাক্ট থাকে "products" collection-এ (হোমপেজ যেটা পড়ে)
-// - Furniture/Fashion প্রোডাক্ট থাকে "posts" collection-এ (furniture/fashion পেজ যেটা পড়ে)
-// দুটো একসাথে fetch করে merge করে একটাই তালিকা বানানো হচ্ছে
 function loadProducts() {
   const list = document.getElementById("productsList");
   list.innerHTML = "লোড হচ্ছে...";
 
-  Promise.all([
-    db.collection("products").orderBy("order", "asc").get(),
-    db.collection("posts").orderBy("order", "asc").get()
-  ])
-    .then(([productsSnap, postsSnap]) => {
+  db.collection("products").orderBy("order", "asc").get()
+    .then((snapshot) => {
       allProducts = [];
-      productsSnap.forEach((doc) => allProducts.push({ id: doc.id, _source: 'products', ...doc.data() }));
-      postsSnap.forEach((doc) => allProducts.push({ id: doc.id, _source: 'posts', ...doc.data() }));
-      allProducts.sort((a, b) => (a.order || 0) - (b.order || 0));
-      document.getElementById('productsCount').textContent = allProducts.length ? allProducts.length : '';
-      renderProductsList();
+      snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
+      document.getElementById('productsCount').textContent = snapshot.size ? snapshot.size : '';
+      if (snapshot.empty) {
+        list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
+        return;
+      }
+      let html = "";
+      const total = snapshot.size;
+      snapshot.forEach((doc, index) => {
+        const p = doc.data();
+        const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
+        const position = index + 1;
+        html += `
+          <div class="order-item">
+            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
+            <div>${escapeHtml(p.fullName)}</div>
+            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+            <div class="status-row">
+              <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
+              <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
+            </div>
+          </div>`;
+      });
+      list.innerHTML = html;
+
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id')));
+      });
     })
     .catch((err) => {
       list.innerHTML = "<p>প্রোডাক্ট লোড করতে সমস্যা হয়েছে।</p>";
@@ -377,83 +325,11 @@ function loadProducts() {
     });
 }
 
-// ক্যাশ করা allProducts থেকেই ক্যাটাগরি ফিল্টার বার + লিস্ট বানায় — Orders ট্যাবের
-// মতোই প্যাটার্ন, কোনো নতুন Firestore কল লাগে না
-function renderProductsList() {
-  const list = document.getElementById("productsList");
-
-  if (allProducts.length === 0) {
-    list.innerHTML = "<p>এখনো কোনো প্রোডাক্ট নেই।</p>";
-    return;
-  }
-
-  const counts = { all: allProducts.length, home: 0, furniture: 0, fashion: 0 };
-  allProducts.forEach(p => {
-    const cat = p.category || 'home';
-    counts[cat] = (counts[cat] || 0) + 1;
-  });
-
-  let statsHtml = '<div class="stats-bar">';
-  PRODUCT_CATEGORY_FILTERS.forEach(f => {
-    statsHtml += `<div class="stat-chip ${currentProductFilter === f.key ? 'active' : ''}" data-key="${f.key}">${f.label} <span class="stat-count">${counts[f.key] || 0}</span></div>`;
-  });
-  statsHtml += '</div>';
-
-  const filtered = currentProductFilter === 'all' ? allProducts : allProducts.filter(p => (p.category || 'home') === currentProductFilter);
-  const total = filtered.length;
-
-  let itemsHtml = '';
-  if (filtered.length === 0) {
-    itemsHtml = '<p style="padding:10px 0;">এই ক্যাটাগরিতে কোনো প্রোডাক্ট নেই।</p>';
-  } else {
-    filtered.forEach((p, index) => {
-      const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
-      const position = index + 1;
-      const catLabel = productCategoryLabel(p.category || 'home');
-      const subLabel = productSubCategoryLabel(p.category || 'home', p.subCategory);
-      const catBadge = subLabel ? `${catLabel} · ${subLabel}` : catLabel;
-      itemsHtml += `
-        <div class="order-item">
-          <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
-          <div>${escapeHtml(p.fullName || p.name)}</div>
-          <div class="order-note">${escapeHtml(catBadge)} · ${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
-          <div class="status-row">
-            <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}" data-source="${escapeHtml(p._source)}">✏️ এডিট</button>
-            <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}" data-source="${escapeHtml(p._source)}">🗑️ ডিলিট</button>
-          </div>
-        </div>`;
-    });
-  }
-
-  list.innerHTML = statsHtml + itemsHtml;
-
-  list.querySelectorAll('.stat-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      currentProductFilter = chip.getAttribute('data-key');
-      renderProductsList();
-    });
-  });
-  list.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id'), btn.getAttribute('data-source')));
-  });
-  list.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id'), btn.getAttribute('data-source')));
-  });
-}
-
-// ফর্মের ভ্যালু দিয়ে নতুন প্রোডাক্ট তৈরি করে, অথবা এডিট মোডে থাকলে আপডেট করে।
-// Category অনুযায়ী সঠিক collection-এ সেভ হয়:
-//   Home        → "products" collection (হোমপেজ যেটা পড়ে)
-//   Furniture/Fashion → "posts" collection (furniture/fashion পেজের গ্রিড যেটা পড়ে)
+// ফর্মের ভ্যালু দিয়ে নতুন প্রোডাক্ট তৈরি করে, অথবা এডিট মোডে থাকলে আপডেট করে
 function saveProduct() {
   const msg = document.getElementById("productFormMsg");
   const editingId = document.getElementById("editingProductId").value;
 
-  const category = document.getElementById("pCategory").value;
-  // Home-এর কোনো sub-category নেই, তাই এই ক্ষেত্রে খালি রাখা হচ্ছে
-  const subCategory = (PRODUCT_SUB_CATEGORY_OPTIONS[category] || []).length
-    ? document.getElementById("pSubCategory").value
-    : '';
   const name = document.getElementById("pName").value.trim();
   const fullName = document.getElementById("pFullName").value.trim();
   const tag = document.getElementById("pTag").value.trim();
@@ -469,47 +345,15 @@ function saveProduct() {
     return;
   }
 
-  if ((category === 'furniture' || category === 'fashion') && !subCategory) {
-    msg.style.color = "#c0533e";
-    msg.textContent = "Furniture বা Fashion বাছাই করলে Sub-category-ও বাছাই করতে হবে।";
-    return;
-  }
-
-  const targetCollection = category === 'home' ? 'products' : 'posts';
-
-  // targetCollection অনুযায়ী উপযুক্ত shape-এ ডেটা বানানো হচ্ছে —
-  // Home হলে ঠিক আগের মতোই "products" ডকুমেন্ট, Furniture/Fashion হলে "posts"
-  // collection-এর ফিল্ডে (যা furniture-grid.js/fashion-grid.js পড়ে) সেভ হয়।
-  let saveData;
-  if (targetCollection === 'products') {
-    saveData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
-  } else {
-    saveData = {
-      name,
-      fullName, // এখানে ব্যবহার হয় না, কিন্তু রেখে দেওয়া হচ্ছে যাতে পরে Home-এ ফিরিয়ে নিলে ডেটা হারিয়ে না যায়
-      category,
-      subCategory,
-      tag,
-      price,
-      priceUnit: 'প্রতি পিস',
-      image,
-      slug,
-      metaDesc: '',
-      specs: [],
-      description: description ? [description] : [fullName || name],
-      order
-    };
-  }
+  const productData = { name, fullName, tag, description, price, image, slug, order };
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
-  // এডিট মোডে slug বদলে গেলে, অথবা Category বদলে অন্য collection-এ চলে গেলে,
-  // পুরনো collection-এর পুরনো doc-টা আলাদা করে ডিলিট করতে হয় — নাহলে ডুপ্লিকেট থেকে যায়।
-  db.collection(targetCollection).doc(slug).set(saveData)
+  // এডিট মোডে slug বদলে গেলে এটা আসলে একটা নতুন doc ID-তে সেভ হয়, তাই পুরনো
+  // slug-এর ডকুমেন্টটা আলাদা করে ডিলিট না করলে ডুপ্লিকেট প্রোডাক্ট থেকে যায়।
+  db.collection("products").doc(slug).set(productData)
     .then(() => {
-      const oldDocMoved = editingId && (editingId !== slug || (editingProductSource && editingProductSource !== targetCollection));
-      if (oldDocMoved) {
-        const oldCollection = editingProductSource || targetCollection;
-        return db.collection(oldCollection).doc(editingId).delete();
+      if (editingId && editingId !== slug) {
+        return db.collection("products").doc(editingId).delete();
       }
     })
     .then(() => {
@@ -525,19 +369,15 @@ function saveProduct() {
     });
 }
 
-function editProduct(id, source) {
-  const collection = source || 'products';
-  db.collection(collection).doc(id).get().then((doc) => {
+function editProduct(id) {
+  db.collection("products").doc(id).get().then((doc) => {
     if (!doc.exists) return;
     const p = doc.data();
     document.getElementById("editingProductId").value = id;
-    editingProductSource = collection;
-    document.getElementById("pCategory").value = p.category || 'home';
-    updateProductSubCategoryOptions(p.subCategory);
     document.getElementById("pName").value = p.name || '';
     document.getElementById("pFullName").value = p.fullName || '';
     document.getElementById("pTag").value = p.tag || '';
-    document.getElementById("pDescription").value = Array.isArray(p.description) ? p.description.join(' ') : (p.description || '');
+    document.getElementById("pDescription").value = p.description || '';
     document.getElementById("pPrice").value = p.price || '';
     document.getElementById("pImage").value = p.image || '';
     document.getElementById("pSlug").value = p.slug || id;
@@ -552,9 +392,6 @@ function editProduct(id, source) {
 
 function cancelEdit() {
   document.getElementById("editingProductId").value = "";
-  editingProductSource = '';
-  document.getElementById("pCategory").value = 'home';
-  updateProductSubCategoryOptions();
   document.getElementById("pName").value = '';
   document.getElementById("pFullName").value = '';
   document.getElementById("pTag").value = '';
@@ -569,10 +406,10 @@ function cancelEdit() {
   document.getElementById("cancelEditBtn").style.display = "none";
 }
 
-function deleteProduct(id, source) {
+function deleteProduct(id) {
   if (!confirm("আপনি কি নিশ্চিত এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
 
-  db.collection(source || 'products').doc(id).delete()
+  db.collection("products").doc(id).delete()
     .then(() => {
       loadProducts();
     })
@@ -672,24 +509,15 @@ function formatTakaBn(amount) {
 // নেভ মেনুতে (index.html) যোগ করলে এখানেও যোগ করতে হবে, তাহলেই admin ফর্মে দেখাবে
 const SUB_CATEGORY_OPTIONS = {
   furniture: [
-    { value: 'office-chair',    label: 'Office Chair' },
-    { value: 'dining-chair',    label: 'Dining Chair' },
-    { value: 'sofa',            label: 'Sofa' },
-    { value: 'table',           label: 'Table' },
-    { value: 'bed',             label: 'Bed' },
-    { value: 'almira',          label: 'Almira' },
-    { value: 'other-furniture', label: 'Other Furniture' }
+    { value: 'steel-chair', label: 'স্টিল চেয়ার' },
+    { value: 'office-chair', label: 'অফিস চেয়ার' },
+    { value: 'dining-chair', label: 'ডাইনিং চেয়ার' },
+    { value: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
   ],
   fashion: [
-    { value: 'three-piece',   label: 'Three Piece' },
-    { value: 'one-piece',     label: 'One Piece' },
-    { value: 'two-piece',     label: 'Two Piece' },
-    { value: 'panjabi',       label: 'Panjabi' },
-    { value: 'shirt',         label: 'Shirt' },
-    { value: 't-shirt',       label: 'T-Shirt' },
-    { value: 'pant',          label: 'Pant' },
-    { value: 'shoe',          label: 'Shoe' },
-    { value: 'other-fashion', label: 'Other Fashion' }
+    { value: 'one-piece', label: 'ওয়ান পিস' },
+    { value: 'two-piece', label: 'টু পিস' },
+    { value: 'three-piece', label: 'থ্রি পিস' }
   ]
 };
 
@@ -1163,11 +991,9 @@ function exportProductsToCSV() {
     alert("ডাউনলোড করার মতো কোনো প্রোডাক্ট নেই।");
     return;
   }
-  const headers = ['Slug', 'Category', 'Sub-category', 'নাম', 'পুরো নাম', 'ট্যাগ', 'বিবরণ', 'দাম (৳)', 'ছবি', 'ক্রম'];
+  const headers = ['Slug', 'নাম', 'পুরো নাম', 'ট্যাগ', 'বিবরণ', 'দাম (৳)', 'ছবি', 'ক্রম'];
   const rows = allProducts.map(p => [
     p.slug || p.id || '',
-    productCategoryLabel(p.category || 'home'),
-    productSubCategoryLabel(p.category || 'home', p.subCategory),
     p.name || '',
     p.fullName || '',
     p.tag || '',

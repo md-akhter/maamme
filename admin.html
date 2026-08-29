@@ -33,7 +33,7 @@
     <!-- Orders আর Products আলাদা ট্যাবে — একসাথে সব একই পেজে থাকার দরকার নেই -->
     <div class="tabs">
         <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 অর্ডার <span class="count-badge" id="ordersCount"></span></button>
-        <button class="tab-btn" id="tabBtn-products" onclick="switchTab('products')">🗂️ Admin Product Management <span class="count-badge" id="productsCount"></span></button>
+        <button class="tab-btn" id="tabBtn-products" onclick="switchTab('products')">🪑 প্রোডাক্ট <span class="count-badge" id="productsCount"></span></button>
         <button class="tab-btn" id="tabBtn-complaints" onclick="switchTab('complaints')">📢 অভিযোগ <span class="count-badge" id="complaintsCount"></span></button>
         <button class="tab-btn" id="tabBtn-posts" onclick="switchTab('posts')">📝 পোস্ট <span class="count-badge" id="postsCount"></span></button>
     </div>
@@ -57,18 +57,6 @@
         <div class="card">
             <h3 id="productFormTitle">➕ নতুন প্রোডাক্ট যোগ করুন</h3>
             <input type="hidden" id="editingProductId" value="">
-
-            <label>Category — Home / Furniture / Fashion</label>
-            <select id="pCategory" onchange="updateProductSubCategoryOptions()">
-                <option value="home">Home</option>
-                <option value="furniture">Furniture</option>
-                <option value="fashion">Fashion</option>
-            </select>
-
-            <div id="pSubCategoryWrap" style="display:none;">
-                <label>Sub-category</label>
-                <select id="pSubCategory"></select>
-            </div>
 
             <label>প্রোডাক্টের নাম (ছোট, কার্ডে দেখাবে) — যেমন: ডাইনিং চেয়ার</label>
             <input type="text" id="pName" placeholder="ডাইনিং চেয়ার">
@@ -100,7 +88,7 @@
         </div>
 
         <div class="card">
-            <h3>🗂️ সব প্রোডাক্ট</h3>
+            <h3>🪑 সব প্রোডাক্ট</h3>
             <button class="small-btn" style="margin-bottom:14px;" onclick="exportProductsToCSV()">📥 CSV ডাউনলোড করুন (ব্যাকআপ)</button>
             <div id="productsList">লোড হচ্ছে...</div>
         </div>
@@ -113,15 +101,6 @@
 
             <label>প্রোডাক্টের নাম — যেমন: কাউন্টার চেয়ার-কালো</label>
             <input type="text" id="postName" placeholder="কাউন্টার চেয়ার-কালো">
-
-            <label>Category — কোন পেজের গ্রিডে দেখাবে (furniture/index.html বা fashion/index.html)</label>
-            <select id="postCategory" onchange="updatePostSubCategoryOptions()">
-                <option value="furniture">Furniture</option>
-                <option value="fashion">Fashion</option>
-            </select>
-
-            <label>Sub-category — উপরের ক্যাটাগরি অনুযায়ী ফিল্টার চিপে দেখাবে</label>
-            <select id="postSubCategory"></select>
 
             <label>ক্যাটাগরি/eyebrow ট্যাগ — যেমন: ক্লোজ কালেকশন</label>
             <input type="text" id="postTag" placeholder="ক্লোজ কালেকশন">
