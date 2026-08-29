@@ -13,13 +13,10 @@ const chipsWrap = document.getElementById('categoryChips');
 
 const SUB_CATEGORIES = [
   { key: 'all', label: 'সব' },
-  { key: 'office-chair', label: 'Office Chair' },
-  { key: 'dining-chair', label: 'Dining Chair' },
-  { key: 'sofa', label: 'Sofa' },
-  { key: 'table', label: 'Table' },
-  { key: 'bed', label: 'Bed' },
-  { key: 'almira', label: 'Almira' },
-  { key: 'other-furniture', label: 'Other Furniture' }
+  { key: 'steel-chair', label: 'স্টিল চেয়ার' },
+  { key: 'office-chair', label: 'অফিস চেয়ার' },
+  { key: 'dining-chair', label: 'ডাইনিং চেয়ার' },
+  { key: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
 ];
 
 let allPosts = [];
