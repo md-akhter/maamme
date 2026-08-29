@@ -341,6 +341,7 @@ function updateProductSubCategoryOptions(selectedSubCategory) {
 updateProductSubCategoryOptions();
 
 let allProducts = [];
+let editingProductSource = ''; // 'products' (Home) বা 'posts' (Furniture/Fashion) — কোন collection থেকে এডিট হচ্ছে সেটা মনে রাখতে
 const PRODUCT_CATEGORY_FILTERS = [
   { key: 'all', label: 'সব' },
   { key: 'home', label: 'Home' },
@@ -349,14 +350,24 @@ const PRODUCT_CATEGORY_FILTERS = [
 ];
 let currentProductFilter = 'all';
 
+// "Admin Product Management" একটাই তালিকায় Home + Furniture + Fashion সব প্রোডাক্ট
+// দেখায়, কিন্তু আসলে দুইটা আলাদা Firestore collection থেকে ডেটা আসে:
+// - Home প্রোডাক্ট থাকে "products" collection-এ (হোমপেজ যেটা পড়ে)
+// - Furniture/Fashion প্রোডাক্ট থাকে "posts" collection-এ (furniture/fashion পেজ যেটা পড়ে)
+// দুটো একসাথে fetch করে merge করে একটাই তালিকা বানানো হচ্ছে
 function loadProducts() {
   const list = document.getElementById("productsList");
   list.innerHTML = "লোড হচ্ছে...";
 
-  db.collection("products").orderBy("order", "asc").get()
-    .then((snapshot) => {
+  Promise.all([
+    db.collection("products").orderBy("order", "asc").get(),
+    db.collection("posts").orderBy("order", "asc").get()
+  ])
+    .then(([productsSnap, postsSnap]) => {
       allProducts = [];
-      snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
+      productsSnap.forEach((doc) => allProducts.push({ id: doc.id, _source: 'products', ...doc.data() }));
+      postsSnap.forEach((doc) => allProducts.push({ id: doc.id, _source: 'posts', ...doc.data() }));
+      allProducts.sort((a, b) => (a.order || 0) - (b.order || 0));
       document.getElementById('productsCount').textContent = allProducts.length ? allProducts.length : '';
       renderProductsList();
     })
@@ -404,11 +415,11 @@ function renderProductsList() {
       itemsHtml += `
         <div class="order-item">
           <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
-          <div>${escapeHtml(p.fullName)}</div>
+          <div>${escapeHtml(p.fullName || p.name)}</div>
           <div class="order-note">${escapeHtml(catBadge)} · ${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
           <div class="status-row">
-            <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}">✏️ এডিট</button>
-            <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}">🗑️ ডিলিট</button>
+            <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}" data-source="${escapeHtml(p._source)}">✏️ এডিট</button>
+            <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}" data-source="${escapeHtml(p._source)}">🗑️ ডিলিট</button>
           </div>
         </div>`;
     });
@@ -423,14 +434,17 @@ function renderProductsList() {
     });
   });
   list.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id')));
+    btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id'), btn.getAttribute('data-source')));
   });
   list.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id')));
+    btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id'), btn.getAttribute('data-source')));
   });
 }
 
-// ফর্মের ভ্যালু দিয়ে নতুন প্রোডাক্ট তৈরি করে, অথবা এডিট মোডে থাকলে আপডেট করে
+// ফর্মের ভ্যালু দিয়ে নতুন প্রোডাক্ট তৈরি করে, অথবা এডিট মোডে থাকলে আপডেট করে।
+// Category অনুযায়ী সঠিক collection-এ সেভ হয়:
+//   Home        → "products" collection (হোমপেজ যেটা পড়ে)
+//   Furniture/Fashion → "posts" collection (furniture/fashion পেজের গ্রিড যেটা পড়ে)
 function saveProduct() {
   const msg = document.getElementById("productFormMsg");
   const editingId = document.getElementById("editingProductId").value;
@@ -461,15 +475,41 @@ function saveProduct() {
     return;
   }
 
-  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
+  const targetCollection = category === 'home' ? 'products' : 'posts';
+
+  // targetCollection অনুযায়ী উপযুক্ত shape-এ ডেটা বানানো হচ্ছে —
+  // Home হলে ঠিক আগের মতোই "products" ডকুমেন্ট, Furniture/Fashion হলে "posts"
+  // collection-এর ফিল্ডে (যা furniture-grid.js/fashion-grid.js পড়ে) সেভ হয়।
+  let saveData;
+  if (targetCollection === 'products') {
+    saveData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
+  } else {
+    saveData = {
+      name,
+      fullName, // এখানে ব্যবহার হয় না, কিন্তু রেখে দেওয়া হচ্ছে যাতে পরে Home-এ ফিরিয়ে নিলে ডেটা হারিয়ে না যায়
+      category,
+      subCategory,
+      tag,
+      price,
+      priceUnit: 'প্রতি পিস',
+      image,
+      slug,
+      metaDesc: '',
+      specs: [],
+      description: description ? [description] : [fullName || name],
+      order
+    };
+  }
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
-  // এডিট মোডে slug বদলে গেলে এটা আসলে একটা নতুন doc ID-তে সেভ হয়, তাই পুরনো
-  // slug-এর ডকুমেন্টটা আলাদা করে ডিলিট না করলে ডুপ্লিকেট প্রোডাক্ট থেকে যায়।
-  db.collection("products").doc(slug).set(productData)
+  // এডিট মোডে slug বদলে গেলে, অথবা Category বদলে অন্য collection-এ চলে গেলে,
+  // পুরনো collection-এর পুরনো doc-টা আলাদা করে ডিলিট করতে হয় — নাহলে ডুপ্লিকেট থেকে যায়।
+  db.collection(targetCollection).doc(slug).set(saveData)
     .then(() => {
-      if (editingId && editingId !== slug) {
-        return db.collection("products").doc(editingId).delete();
+      const oldDocMoved = editingId && (editingId !== slug || (editingProductSource && editingProductSource !== targetCollection));
+      if (oldDocMoved) {
+        const oldCollection = editingProductSource || targetCollection;
+        return db.collection(oldCollection).doc(editingId).delete();
       }
     })
     .then(() => {
@@ -485,17 +525,19 @@ function saveProduct() {
     });
 }
 
-function editProduct(id) {
-  db.collection("products").doc(id).get().then((doc) => {
+function editProduct(id, source) {
+  const collection = source || 'products';
+  db.collection(collection).doc(id).get().then((doc) => {
     if (!doc.exists) return;
     const p = doc.data();
     document.getElementById("editingProductId").value = id;
+    editingProductSource = collection;
     document.getElementById("pCategory").value = p.category || 'home';
     updateProductSubCategoryOptions(p.subCategory);
     document.getElementById("pName").value = p.name || '';
     document.getElementById("pFullName").value = p.fullName || '';
     document.getElementById("pTag").value = p.tag || '';
-    document.getElementById("pDescription").value = p.description || '';
+    document.getElementById("pDescription").value = Array.isArray(p.description) ? p.description.join(' ') : (p.description || '');
     document.getElementById("pPrice").value = p.price || '';
     document.getElementById("pImage").value = p.image || '';
     document.getElementById("pSlug").value = p.slug || id;
@@ -510,6 +552,7 @@ function editProduct(id) {
 
 function cancelEdit() {
   document.getElementById("editingProductId").value = "";
+  editingProductSource = '';
   document.getElementById("pCategory").value = 'home';
   updateProductSubCategoryOptions();
   document.getElementById("pName").value = '';
@@ -526,10 +569,10 @@ function cancelEdit() {
   document.getElementById("cancelEditBtn").style.display = "none";
 }
 
-function deleteProduct(id) {
+function deleteProduct(id, source) {
   if (!confirm("আপনি কি নিশ্চিত এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
 
-  db.collection("products").doc(id).delete()
+  db.collection(source || 'products').doc(id).delete()
     .then(() => {
       loadProducts();
     })
