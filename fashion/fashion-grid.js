@@ -13,15 +13,9 @@ const chipsWrap = document.getElementById('categoryChips');
 
 const SUB_CATEGORIES = [
   { key: 'all', label: 'সব' },
-  { key: 'three-piece', label: 'Three Piece' },
-  { key: 'one-piece', label: 'One Piece' },
-  { key: 'two-piece', label: 'Two Piece' },
-  { key: 'panjabi', label: 'Panjabi' },
-  { key: 'shirt', label: 'Shirt' },
-  { key: 't-shirt', label: 'T-Shirt' },
-  { key: 'pant', label: 'Pant' },
-  { key: 'shoe', label: 'Shoe' },
-  { key: 'other-fashion', label: 'Other Fashion' }
+  { key: 'one-piece', label: 'ওয়ান পিস' },
+  { key: 'two-piece', label: 'টু পিস' },
+  { key: 'three-piece', label: 'থ্রি পিস' }
 ];
 
 let allPosts = [];
