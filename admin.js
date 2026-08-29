@@ -505,9 +505,39 @@ function formatTakaBn(amount) {
   return '৳ ' + toBanglaNumber(grouped);
 }
 
+// ফার্নিচার/ফ্যাশন নেভ dropdown-এর সাথে মিলিয়ে সাব-ক্যাটাগরি অপশন — নতুন সাব-ক্যাটাগরি
+// নেভ মেনুতে (index.html) যোগ করলে এখানেও যোগ করতে হবে, তাহলেই admin ফর্মে দেখাবে
+const SUB_CATEGORY_OPTIONS = {
+  furniture: [
+    { value: 'steel-chair', label: 'স্টিল চেয়ার' },
+    { value: 'office-chair', label: 'অফিস চেয়ার' },
+    { value: 'dining-chair', label: 'ডাইনিং চেয়ার' },
+    { value: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
+  ],
+  fashion: [
+    { value: 'one-piece', label: 'ওয়ান পিস' },
+    { value: 'two-piece', label: 'টু পিস' },
+    { value: 'three-piece', label: 'থ্রি পিস' }
+  ]
+};
+
+// "ক্যাটাগরি" dropdown বদলালে "সাব-ক্যাটাগরি" dropdown-এর অপশনও সেই অনুযায়ী বদলে যায়
+function updatePostSubCategoryOptions(selectedSubCategory) {
+  const category = document.getElementById("postCategory").value;
+  const subSelect = document.getElementById("postSubCategory");
+  const options = SUB_CATEGORY_OPTIONS[category] || [];
+  subSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  if (selectedSubCategory && options.some(o => o.value === selectedSubCategory)) {
+    subSelect.value = selectedSubCategory;
+  }
+}
+updatePostSubCategoryOptions();
+
 function readPostForm() {
   return {
     name: document.getElementById("postName").value.trim(),
+    category: document.getElementById("postCategory").value,
+    subCategory: document.getElementById("postSubCategory").value,
     tag: document.getElementById("postTag").value.trim(),
     price: Number(document.getElementById("postPrice").value) || 0,
     priceUnit: document.getElementById("postPriceUnit").value.trim() || 'প্রতি পিস',
@@ -558,6 +588,8 @@ function editPost(id) {
     const p = doc.data();
     document.getElementById("editingPostId").value = id;
     document.getElementById("postName").value = p.name || '';
+    document.getElementById("postCategory").value = p.category || 'furniture';
+    updatePostSubCategoryOptions(p.subCategory);
     document.getElementById("postTag").value = p.tag || '';
     document.getElementById("postPrice").value = p.price || '';
     document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
@@ -578,6 +610,8 @@ function editPost(id) {
 function cancelPostEdit() {
   document.getElementById("editingPostId").value = "";
   document.getElementById("postName").value = '';
+  document.getElementById("postCategory").value = 'furniture';
+  updatePostSubCategoryOptions();
   document.getElementById("postTag").value = '';
   document.getElementById("postPrice").value = '';
   document.getElementById("postPriceUnit").value = 'প্রতি পিস';
