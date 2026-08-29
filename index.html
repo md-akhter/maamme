@@ -29,12 +29,51 @@
     <div class="logo"><a href="/"><img src="images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
     <ul class="nav-links">
       <li><a href="/">হোম</a></li>
+      <li class="has-dropdown">
+        <a href="furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="furniture/index.html#steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="furniture/index.html#office-chair">অফিস চেয়ার</a></li>
+          <li><a href="furniture/index.html#dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="furniture/index.html#foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="fashion/index.html#one-piece">ওয়ান পিস</a></li>
+          <li><a href="fashion/index.html#two-piece">টু পিস</a></li>
+          <li><a href="fashion/index.html#three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
       <li><a href="products/index.html">প্রোডাক্ট</a></li>
       <li><a href="about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
         <a href="/">হোম</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="furniture/index.html#steel-chair">স্টিল চেয়ার</a>
+            <a href="furniture/index.html#office-chair">অফিস চেয়ার</a>
+            <a href="furniture/index.html#dining-chair">ডাইনিং চেয়ার</a>
+            <a href="furniture/index.html#foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="fashion/index.html#one-piece">ওয়ান পিস</a>
+            <a href="fashion/index.html#two-piece">টু পিস</a>
+            <a href="fashion/index.html#three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
         <a href="products/index.html">প্রোডাক্ট</a>
         <a href="about-us.html">আমাদের সম্পর্কে</a>
       </div>
@@ -317,6 +356,25 @@
     </div>
   </div>
 </footer>
+
+<script>
+  // মোবাইলে "ফার্নিচার"/"ফ্যাশন" বাটনে ক্লিক করলে সাব-মেনু (dropdown) খোলে/বন্ধ হয় —
+  // একসাথে একটার বেশি সাব-মেনু খোলা না থাকার জন্য অন্যগুলো বন্ধ করে দেওয়া হচ্ছে
+  function toggleMobileSubmenu(btn) {
+    const submenu = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+
+    document.querySelectorAll('.mobile-nav-parent.open').forEach(otherBtn => {
+      if (otherBtn !== btn) {
+        otherBtn.classList.remove('open');
+        if (otherBtn.nextElementSibling) otherBtn.nextElementSibling.classList.remove('open');
+      }
+    });
+
+    btn.classList.toggle('open', !isOpen);
+    if (submenu) submenu.classList.toggle('open', !isOpen);
+  }
+</script>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>

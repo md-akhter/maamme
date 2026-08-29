@@ -92,6 +92,35 @@
   .mobile-menu-toggle{display:none;}
   .mobile-nav-links{display:none;}
 
+  /* ---------- NAV DROPDOWN (Furniture / Fashion) — ডেস্কটপ, hover-এ খোলে ---------- */
+  .nav-links li.has-dropdown{position:relative;}
+  .nav-links .dropdown-toggle{display:inline-flex; align-items:center; gap:4px;}
+  .nav-links .dropdown-toggle .caret{font-size:10px; transition:transform .2s ease; display:inline-block;}
+  .nav-links li.has-dropdown:hover .dropdown-toggle .caret{transform:rotate(180deg);}
+  /* hover করার সময় মেনু আর টগলের মাঝের ফাঁকা জায়গায় মাউস গেলেও যাতে মেনু বন্ধ না হয়ে যায়,
+     তাই এই অদৃশ্য bridge */
+  .nav-links li.has-dropdown::after{
+    content:''; position:absolute; top:100%; left:0; right:0; height:14px;
+  }
+  .dropdown-menu{
+    list-style:none; margin:0; padding:8px;
+    position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%) translateY(4px);
+    background:var(--ivory); border:1px solid var(--line); border-radius:6px;
+    box-shadow:0 14px 34px rgba(0,0,0,.16); min-width:190px;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
+    z-index:70;
+  }
+  .nav-links li.has-dropdown:hover .dropdown-menu{
+    opacity:1; visibility:visible; pointer-events:auto; transform:translateX(-50%) translateY(0);
+  }
+  .dropdown-menu a{
+    display:block; padding:9px 12px; font-size:13.5px; color:var(--text-dark);
+    text-decoration:none; border-radius:4px; white-space:nowrap;
+  }
+  .dropdown-menu a::after{display:none;}
+  .dropdown-menu a:hover{background:rgba(224,162,51,0.12); color:var(--brass);}
+
   /* ---------- HERO ---------- */
   .hero{
     position:relative; overflow:hidden;
@@ -454,6 +483,30 @@
       background:rgba(224,162,51,0.14); border-color:var(--brass); transform:translateX(2px);
     }
     .mobile-nav-links a:active{background:rgba(224,162,51,0.22);}
+
+    /* মোবাইলে "ফার্নিচার"/"ফ্যাশন"-এর সাব-মেনু — বাটনে ট্যাপ করলে accordion-এর মতো খোলে/বন্ধ হয় */
+    .mobile-nav-group{display:flex; flex-direction:column;}
+    .mobile-nav-parent{
+      display:flex; align-items:center; justify-content:space-between; gap:9px;
+      width:100%; padding:10px 12px; font-size:14px; font-weight:500; font-family:inherit;
+      color:var(--walnut-950); background:var(--ivory-dim);
+      border:1px solid transparent; border-radius:3px; cursor:pointer;
+      transition:background .2s ease, border-color .2s ease;
+    }
+    .mobile-nav-parent:hover{background:rgba(224,162,51,0.14); border-color:var(--brass);}
+    .mobile-nav-parent .caret{font-size:11px; transition:transform .2s ease;}
+    .mobile-nav-parent.open .caret{transform:rotate(180deg);}
+    .mobile-submenu{
+      display:none; flex-direction:column; gap:4px;
+      padding:6px 0 4px 14px; margin-bottom:2px;
+    }
+    .mobile-submenu.open{display:flex;}
+    .mobile-submenu a{
+      padding:9px 12px; font-size:13px; color:var(--walnut-800);
+      background:transparent; border-left:2px solid var(--line); border-radius:0 3px 3px 0;
+      text-decoration:none; transition:background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .mobile-submenu a:hover{background:rgba(224,162,51,0.10); color:var(--brass); border-left-color:var(--brass);}
 
     section{padding:64px 0;}
     .ledger{padding:22px 18px;}
