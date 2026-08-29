@@ -629,15 +629,24 @@ function formatTakaBn(amount) {
 // নেভ মেনুতে (index.html) যোগ করলে এখানেও যোগ করতে হবে, তাহলেই admin ফর্মে দেখাবে
 const SUB_CATEGORY_OPTIONS = {
   furniture: [
-    { value: 'steel-chair', label: 'স্টিল চেয়ার' },
-    { value: 'office-chair', label: 'অফিস চেয়ার' },
-    { value: 'dining-chair', label: 'ডাইনিং চেয়ার' },
-    { value: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
+    { value: 'office-chair',    label: 'Office Chair' },
+    { value: 'dining-chair',    label: 'Dining Chair' },
+    { value: 'sofa',            label: 'Sofa' },
+    { value: 'table',           label: 'Table' },
+    { value: 'bed',             label: 'Bed' },
+    { value: 'almira',          label: 'Almira' },
+    { value: 'other-furniture', label: 'Other Furniture' }
   ],
   fashion: [
-    { value: 'one-piece', label: 'ওয়ান পিস' },
-    { value: 'two-piece', label: 'টু পিস' },
-    { value: 'three-piece', label: 'থ্রি পিস' }
+    { value: 'three-piece',   label: 'Three Piece' },
+    { value: 'one-piece',     label: 'One Piece' },
+    { value: 'two-piece',     label: 'Two Piece' },
+    { value: 'panjabi',       label: 'Panjabi' },
+    { value: 'shirt',         label: 'Shirt' },
+    { value: 't-shirt',       label: 'T-Shirt' },
+    { value: 'pant',          label: 'Pant' },
+    { value: 'shoe',          label: 'Shoe' },
+    { value: 'other-fashion', label: 'Other Fashion' }
   ]
 };
 
