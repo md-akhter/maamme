@@ -1,10 +1,11 @@
 // ============================================================
-// fashion/index.html-এর প্রোডাক্ট গ্রিড — Firestore posts কালেকশন থেকে
-// শুধু category == "fashion" পোস্টগুলো এনে, উপরের চিপ দিয়ে সাব-ক্যাটাগরি
+// fashion/index.html-এর প্রোডাক্ট গ্রিড — Firestore products কালেকশন থেকে
+// শুধু category == "Fashion" প্রোডাক্টগুলো এনে, উপরের চিপ দিয়ে সাব-ক্যাটাগরি
 // (ওয়ান পিস/টু পিস/থ্রি পিস) অনুযায়ী ফিল্টার করে দেখায়।
-// URL-এ ?cat=steel-chair থাকলে সেই ফিল্টার auto-select হয় (nav dropdown-এর লিংক থেকে আসলে)।
-// প্রতিটা কার্ড ../products/slug.html-এ লিংক করে — SEO ডিটেইল পেজ এখনো products/
-// ফোল্ডারেই থাকে (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে জেনারেট করা)।
+// URL-এ ?cat= থাকলে সেই ফিল্টার auto-select হয় (nav dropdown-এর লিংক থেকে আসলে)।
+// প্রতিটা কার্ড ../products/slug.html-এ লিংক করে — এই SEO ডিটেইল পেজটা এখনো posts
+// কালেকশন থেকে আলাদাভাবে জেনারেট হয় (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে),
+// তাই লিংক কাজ করার জন্য একই slug-এ একটা পোস্ট HTML ফাইল আপলোড করা থাকতে হবে।
 // ============================================================
 
 const db = firebase.firestore();
@@ -81,7 +82,7 @@ function renderGrid(activeKey) {
     html += `
       <a href="../products/${escapeHtml(slug)}.html" class="product-card-link">
         <div class="card">
-          <div class="card-art"><img class="card-photo" src="../images/${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
+          <div class="card-art"><img class="card-photo" src="../${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
           <div class="card-body">
             <div class="eyebrow" style="color:var(--brass);">${escapeHtml(p.tag || '')}</div>
             <h2>${escapeHtml(p.name)}</h2>
@@ -93,7 +94,7 @@ function renderGrid(activeKey) {
   grid.innerHTML = html;
 }
 
-db.collection('posts').where('category', '==', 'fashion').orderBy('order', 'asc').get()
+db.collection('products').where('category', '==', 'Fashion').orderBy('order', 'asc').get()
   .then((snapshot) => {
     allPosts = [];
     snapshot.forEach((doc) => allPosts.push({ id: doc.id, ...doc.data() }));
