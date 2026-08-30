@@ -16,7 +16,7 @@ service cloud.firestore {
     }
     match /complaints/{complaintId} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if true;
       allow update, delete: if request.auth != null;
     }
   }
