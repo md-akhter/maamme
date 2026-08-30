@@ -1,10 +1,11 @@
 // ============================================================
-// furniture/index.html-এর প্রোডাক্ট গ্রিড — Firestore posts কালেকশন থেকে
-// শুধু category == "furniture" পোস্টগুলো এনে, উপরের চিপ দিয়ে সাব-ক্যাটাগরি
+// furniture/index.html-এর প্রোডাক্ট গ্রিড — Firestore products কালেকশন থেকে
+// শুধু category == "Furniture" প্রোডাক্টগুলো এনে, উপরের চিপ দিয়ে সাব-ক্যাটাগরি
 // (স্টিল চেয়ার/অফিস চেয়ার/ডাইনিং চেয়ার/ফোল্ডেবল বেড) অনুযায়ী ফিল্টার করে দেখায়।
 // URL-এ ?cat=steel-chair থাকলে সেই ফিল্টার auto-select হয় (nav dropdown-এর লিংক থেকে আসলে)।
-// প্রতিটা কার্ড ../products/slug.html-এ লিংক করে — SEO ডিটেইল পেজ এখনো products/
-// ফোল্ডারেই থাকে (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে জেনারেট করা)।
+// প্রতিটা কার্ড ../products/slug.html-এ লিংক করে — এই SEO ডিটেইল পেজটা এখনো posts
+// কালেকশন থেকে আলাদাভাবে জেনারেট হয় (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে),
+// তাই লিংক কাজ করার জন্য একই slug-এ একটা পোস্ট HTML ফাইল আপলোড করা থাকতে হবে।
 // ============================================================
 
 const db = firebase.firestore();
@@ -82,7 +83,7 @@ function renderGrid(activeKey) {
     html += `
       <a href="../products/${escapeHtml(slug)}.html" class="product-card-link">
         <div class="card">
-          <div class="card-art"><img class="card-photo" src="../images/${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
+          <div class="card-art"><img class="card-photo" src="../${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
           <div class="card-body">
             <div class="eyebrow" style="color:var(--brass);">${escapeHtml(p.tag || '')}</div>
             <h2>${escapeHtml(p.name)}</h2>
@@ -94,7 +95,7 @@ function renderGrid(activeKey) {
   grid.innerHTML = html;
 }
 
-db.collection('posts').where('category', '==', 'furniture').orderBy('order', 'asc').get()
+db.collection('products').where('category', '==', 'Furniture').orderBy('order', 'asc').get()
   .then((snapshot) => {
     allPosts = [];
     snapshot.forEach((doc) => allPosts.push({ id: doc.id, ...doc.data() }));
