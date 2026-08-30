@@ -280,6 +280,13 @@ function updateComplaintStatus(id, newStatus) {
 
 let allProducts = [];
 
+// Category dropdown বদলালে সেই অনুযায়ী সঠিক Sub-category dropdown দেখায়/লুকায়
+function onProductCategoryChange() {
+  const category = document.getElementById("pCategory").value;
+  document.getElementById("furnitureSubWrap").style.display = (category === "Furniture") ? "block" : "none";
+  document.getElementById("fashionSubWrap").style.display = (category === "Fashion") ? "block" : "none";
+}
+
 function loadProducts() {
   const list = document.getElementById("productsList");
   list.innerHTML = "লোড হচ্ছে...";
@@ -303,7 +310,7 @@ function loadProducts() {
           <div class="order-item">
             <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
             <div>${escapeHtml(p.fullName)}</div>
-            <div class="order-note">${escapeHtml(p.tag)} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+            <div class="order-note">${escapeHtml(p.tag)} · ${escapeHtml(p.category || 'Home')}${p.subCategory ? ' - ' + escapeHtml(p.subCategory) : ''} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
               <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
@@ -339,23 +346,29 @@ function saveProduct() {
   const slug = document.getElementById("pSlug").value.trim();
   const order = Number(document.getElementById("pOrder").value) || 0;
 
+  const category = document.getElementById("pCategory").value;
+  let subCategory = "";
+  if (category === "Furniture") subCategory = document.getElementById("pFurnitureSub").value;
+  else if (category === "Fashion") subCategory = document.getElementById("pFashionSub").value;
+
   if (!name || !fullName || !price || !image || !slug) {
     msg.style.color = "#c0533e";
     msg.textContent = "নাম, পুরো নাম, দাম, ছবি ও slug — এই ৫টা অবশ্যই দিতে হবে।";
     return;
   }
 
-  const productData = { name, fullName, tag, description, price, image, slug, order };
+  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
-  // এডিট মোডে slug বদলে গেলে এটা আসলে একটা নতুন doc ID-তে সেভ হয়, তাই পুরনো
-  // slug-এর ডকুমেন্টটা আলাদা করে ডিলিট না করলে ডুপ্লিকেট প্রোডাক্ট থেকে যায়।
-  db.collection("products").doc(slug).set(productData)
-    .then(() => {
-      if (editingId && editingId !== slug) {
-        return db.collection("products").doc(editingId).delete();
-      }
-    })
+  // এডিট মোডে slug বদলে গেলে batch ব্যবহার করা হচ্ছে যাতে নতুন doc তৈরি ও পুরনো doc
+  // ডিলিট — দুটোই একসাথে (atomically) হয়, মাঝপথে নেটওয়ার্ক এরর হলেও ডুপ্লিকেট প্রোডাক্ট
+  // থেকে যাওয়ার সুযোগ থাকে না।
+  const batch = db.batch();
+  batch.set(db.collection("products").doc(slug), productData);
+  if (editingId && editingId !== slug) {
+    batch.delete(db.collection("products").doc(editingId));
+  }
+  batch.commit()
     .then(() => {
       msg.style.color = "#2e7d32";
       msg.textContent = editingId ? "✅ প্রোডাক্ট আপডেট হয়েছে।" : "✅ প্রোডাক্ট যোগ হয়েছে।";
@@ -383,6 +396,11 @@ function editProduct(id) {
     document.getElementById("pSlug").value = p.slug || id;
     document.getElementById("pOrder").value = p.order || '';
 
+    document.getElementById("pCategory").value = p.category || 'Home';
+    onProductCategoryChange();
+    if (p.category === 'Furniture') document.getElementById("pFurnitureSub").value = p.subCategory || 'steel-chair';
+    if (p.category === 'Fashion') document.getElementById("pFashionSub").value = p.subCategory || 'three-piece';
+
     document.getElementById("productFormTitle").textContent = "✏️ প্রোডাক্ট এডিট করুন";
     document.getElementById("saveProductBtn").textContent = "আপডেট করুন";
     document.getElementById("cancelEditBtn").style.display = "block";
@@ -400,6 +418,9 @@ function cancelEdit() {
   document.getElementById("pImage").value = '';
   document.getElementById("pSlug").value = '';
   document.getElementById("pOrder").value = '';
+
+  document.getElementById("pCategory").value = 'Home';
+  onProductCategoryChange();
 
   document.getElementById("productFormTitle").textContent = "➕ নতুন প্রোডাক্ট যোগ করুন";
   document.getElementById("saveProductBtn").textContent = "প্রোডাক্ট যোগ করুন";
@@ -505,39 +526,9 @@ function formatTakaBn(amount) {
   return '৳ ' + toBanglaNumber(grouped);
 }
 
-// ফার্নিচার/ফ্যাশন নেভ dropdown-এর সাথে মিলিয়ে সাব-ক্যাটাগরি অপশন — নতুন সাব-ক্যাটাগরি
-// নেভ মেনুতে (index.html) যোগ করলে এখানেও যোগ করতে হবে, তাহলেই admin ফর্মে দেখাবে
-const SUB_CATEGORY_OPTIONS = {
-  furniture: [
-    { value: 'steel-chair', label: 'স্টিল চেয়ার' },
-    { value: 'office-chair', label: 'অফিস চেয়ার' },
-    { value: 'dining-chair', label: 'ডাইনিং চেয়ার' },
-    { value: 'foldable-bed', label: 'ফোল্ডেবল বেড' }
-  ],
-  fashion: [
-    { value: 'one-piece', label: 'ওয়ান পিস' },
-    { value: 'two-piece', label: 'টু পিস' },
-    { value: 'three-piece', label: 'থ্রি পিস' }
-  ]
-};
-
-// "ক্যাটাগরি" dropdown বদলালে "সাব-ক্যাটাগরি" dropdown-এর অপশনও সেই অনুযায়ী বদলে যায়
-function updatePostSubCategoryOptions(selectedSubCategory) {
-  const category = document.getElementById("postCategory").value;
-  const subSelect = document.getElementById("postSubCategory");
-  const options = SUB_CATEGORY_OPTIONS[category] || [];
-  subSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
-  if (selectedSubCategory && options.some(o => o.value === selectedSubCategory)) {
-    subSelect.value = selectedSubCategory;
-  }
-}
-updatePostSubCategoryOptions();
-
 function readPostForm() {
   return {
     name: document.getElementById("postName").value.trim(),
-    category: document.getElementById("postCategory").value,
-    subCategory: document.getElementById("postSubCategory").value,
     tag: document.getElementById("postTag").value.trim(),
     price: Number(document.getElementById("postPrice").value) || 0,
     priceUnit: document.getElementById("postPriceUnit").value.trim() || 'প্রতি পিস',
@@ -562,13 +553,14 @@ function savePost() {
   }
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে (products ট্যাবের প্যাটার্নেই) — যাতে
-  // Firestore doc ID আর আসল .html ফাইলের নাম সবসময় এক থাকে
-  db.collection("posts").doc(post.slug).set(post)
-    .then(() => {
-      if (editingId && editingId !== post.slug) {
-        return db.collection("posts").doc(editingId).delete();
-      }
-    })
+  // Firestore doc ID আর আসল .html ফাইলের নাম সবসময় এক থাকে। batch ব্যবহার করা হচ্ছে
+  // যাতে slug বদলানোর সময় নতুন doc তৈরি ও পুরনো doc ডিলিট একসাথে (atomically) হয়।
+  const batch = db.batch();
+  batch.set(db.collection("posts").doc(post.slug), post);
+  if (editingId && editingId !== post.slug) {
+    batch.delete(db.collection("posts").doc(editingId));
+  }
+  batch.commit()
     .then(() => {
       msg.style.color = "#2e7d32";
       msg.textContent = editingId ? "✅ পোস্ট আপডেট হয়েছে। এখন চাইলে HTML ফাইলও নতুন করে ডাউনলোড করে আপলোড করুন।" : "✅ পোস্ট যোগ হয়েছে। এখন \"HTML ফাইল ডাউনলোড করুন\" বাটনে ক্লিক করে ফাইলটা GitHub-এ আপলোড করুন।";
@@ -588,8 +580,6 @@ function editPost(id) {
     const p = doc.data();
     document.getElementById("editingPostId").value = id;
     document.getElementById("postName").value = p.name || '';
-    document.getElementById("postCategory").value = p.category || 'furniture';
-    updatePostSubCategoryOptions(p.subCategory);
     document.getElementById("postTag").value = p.tag || '';
     document.getElementById("postPrice").value = p.price || '';
     document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
@@ -610,8 +600,6 @@ function editPost(id) {
 function cancelPostEdit() {
   document.getElementById("editingPostId").value = "";
   document.getElementById("postName").value = '';
-  document.getElementById("postCategory").value = 'furniture';
-  updatePostSubCategoryOptions();
   document.getElementById("postTag").value = '';
   document.getElementById("postPrice").value = '';
   document.getElementById("postPriceUnit").value = 'প্রতি পিস';

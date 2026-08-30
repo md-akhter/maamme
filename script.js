@@ -59,6 +59,13 @@ function loadProducts() {
 
       snapshot.forEach((doc) => {
         const p = doc.data();
+
+        // শুধু Category = "Home" প্রোডাক্ট হোমপেজে দেখানো হয় — Furniture/Fashion
+        // প্রোডাক্ট এখন আলাদা furniture/fashion পেজে দেখানো হবে। পুরোনো প্রোডাক্ট
+        // যেগুলোতে এখনো category field নেই (Admin panel-এর নতুন dropdown যোগ হওয়ার
+        // আগে তৈরি), সেগুলো backward-compatibility-র জন্য Home হিসেবেই ধরা হচ্ছে।
+        if (p.category && p.category !== 'Home') return;
+
         const priceFormatted = Number(p.price).toLocaleString('en-IN');
 
         gridHtml += `
