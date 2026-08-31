@@ -475,7 +475,7 @@ function loadPosts() {
         html += `
           <div class="order-item">
             <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>${formatTakaBn(p.price)}</span></div>
-            <div class="order-note">${escapeHtml(p.tag || '')} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+            <div class="order-note">${escapeHtml(p.tag || '')}${p.status === 'draft' ? ' · 📝 Draft' : ' · ✅ Published'} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}">✏️ এডিট</button>
               <button class="small-btn" data-id="${escapeHtml(p.id)}" data-action="download">📥 HTML</button>
@@ -536,17 +536,82 @@ function formatTakaBn(amount) {
 function readPostForm() {
   return {
     name: document.getElementById("postName").value.trim(),
+    metaTitle: document.getElementById("postMetaTitle").value.trim(),
     tag: document.getElementById("postTag").value.trim(),
+    shortDesc: document.getElementById("postShortDesc").value.trim(),
+    tags: document.getElementById("postTags").value.split(',').map(t => t.trim()).filter(Boolean),
     price: Number(document.getElementById("postPrice").value) || 0,
     priceUnit: document.getElementById("postPriceUnit").value.trim() || 'প্রতি পিস',
     image: document.getElementById("postImage").value.trim(),
+    imageAlt: document.getElementById("postImageAlt").value.trim(),
     slug: document.getElementById("postSlug").value.trim(),
+    status: document.getElementById("postStatus").value,
     metaDesc: document.getElementById("postMetaDesc").value.trim(),
+    focusKeyword: document.getElementById("postFocusKeyword").value.trim(),
     specs: parseSpecs(document.getElementById("postSpecs").value),
     description: parseParagraphs(document.getElementById("postDescription").value),
     order: Number(document.getElementById("postOrder").value) || 0
   };
 }
+
+// ছবির ফাইলনেমে extension (.jpeg/.jpg/.png/.webp) না থাকলে true রিটার্ন করে —
+// extension ছাড়া সেভ করলে ওয়েবসাইটে ছবি ভাঙা দেখায় (এই বাগ আগে একবার হয়েছিল)
+function isMissingImageExtension(filename) {
+  return !!filename && !/\.(jpe?g|png|webp|gif)$/i.test(filename);
+}
+
+// পোস্ট ফর্মের নিচে লাইভ SEO সাহায্য (character counter, warning, focus-keyword
+// checklist) — টাইপ করার সময় সাথে সাথে আপডেট হয়, ভুল হলে সাথে সাথে ধরিয়ে দেয়
+function refreshPostFormHelpers() {
+  const name = document.getElementById("postName").value.trim();
+  const metaTitle = document.getElementById("postMetaTitle").value.trim();
+  const metaDesc = document.getElementById("postMetaDesc").value.trim();
+  const specsText = document.getElementById("postSpecs").value;
+  const focusKeyword = document.getElementById("postFocusKeyword").value.trim();
+  const descText = document.getElementById("postDescription").value;
+
+  // নাম (H1) বেশি লম্বা আর Meta Title ফাঁকা থাকলে সতর্কতা — কারণ তখন নাম থেকেই
+  // অটো টাইটেল তৈরি হয় ("— দাম ও বৈশিষ্ট্য | Maamme.com" জুড়ে), অনেক বড় হয়ে যেতে পারে
+  document.getElementById("postNameWarn").style.display = (name.length > 45 && !metaTitle) ? "block" : "none";
+
+  // Meta Title ক্যারেক্টার কাউন্টার — ফাঁকা থাকলে অটো-জেনারেটেড টাইটেলের দৈর্ঘ্য দেখায়
+  const mtCounter = document.getElementById("postMetaTitleCounter");
+  const autoTitleLen = name ? (name + " — দাম ও বৈশিষ্ট্য | Maamme.com").length : 0;
+  const effectiveLen = metaTitle ? metaTitle.length : autoTitleLen;
+  mtCounter.textContent = effectiveLen + ' অক্ষর (সুপারিশ: ৬০-এর মধ্যে)' + (metaTitle ? '' : ' — অটো-তৈরি টাইটেলের দৈর্ঘ্য');
+  mtCounter.style.color = effectiveLen > 60 ? "#c0533e" : "#6b7690";
+
+  // Meta Description ক্যারেক্টার কাউন্টার
+  const mdCounter = document.getElementById("postMetaDescCounter");
+  mdCounter.textContent = metaDesc.length + ' / ১৬০ অক্ষর';
+  mdCounter.style.color = metaDesc.length > 160 ? "#c0533e" : "#6b7690";
+
+  // স্পেসিফিকেশনের কোনো লাইনে ":" না থাকলে সতর্কতা (নাহলে সেই লাইনের মান খালি সেভ হবে)
+  const specLines = specsText.split('\n').map(l => l.trim()).filter(Boolean);
+  document.getElementById("postSpecsWarn").style.display = specLines.some(l => l.indexOf(':') === -1) ? "block" : "none";
+
+  // Focus Keyword দিলে — Title/Meta Title/Meta বিবরণ/প্রথম প্যারাগ্রাফে আছে কিনা চেকলিস্ট দেখায়
+  const checklistEl = document.getElementById("focusKeywordChecklist");
+  if (!focusKeyword) {
+    checklistEl.style.display = "none";
+  } else {
+    const kw = focusKeyword.toLowerCase();
+    const firstParagraph = parseParagraphs(descText)[0] || '';
+    const checks = [
+      { label: 'নামে (H1)', present: name.toLowerCase().includes(kw) },
+      { label: 'Meta Title-এ', present: (metaTitle || name).toLowerCase().includes(kw) },
+      { label: 'Meta বিবরণে', present: metaDesc.toLowerCase().includes(kw) },
+      { label: 'বিবরণের প্রথম প্যারাগ্রাফে', present: firstParagraph.toLowerCase().includes(kw) }
+    ];
+    checklistEl.style.display = "block";
+    checklistEl.innerHTML = checks.map(c => `<div>${c.present ? '✅' : '⬜'} ${c.label}</div>`).join('');
+  }
+}
+
+['postName', 'postMetaTitle', 'postMetaDesc', 'postSpecs', 'postFocusKeyword', 'postDescription'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', refreshPostFormHelpers);
+});
 
 function savePost() {
   const msg = document.getElementById("postFormMsg");
@@ -556,6 +621,12 @@ function savePost() {
   if (!post.name || !post.price || !post.image || !post.slug || post.description.length === 0) {
     msg.style.color = "#c0533e";
     msg.textContent = "নাম, দাম, ছবি, slug ও বিবরণ — এগুলো অবশ্যই দিতে হবে।";
+    return;
+  }
+
+  if (isMissingImageExtension(post.image)) {
+    msg.style.color = "#c0533e";
+    msg.textContent = "⚠️ ছবির ফাইলনেমে extension নেই (.jpeg/.jpg/.png/.webp) — যেমন: chair1.jpeg। এটা ছাড়া ছবি ভাঙা দেখাবে।";
     return;
   }
 
@@ -587,15 +658,22 @@ function editPost(id) {
     const p = doc.data();
     document.getElementById("editingPostId").value = id;
     document.getElementById("postName").value = p.name || '';
+    document.getElementById("postMetaTitle").value = p.metaTitle || '';
     document.getElementById("postTag").value = p.tag || '';
+    document.getElementById("postShortDesc").value = p.shortDesc || '';
+    document.getElementById("postTags").value = (p.tags || []).join(', ');
     document.getElementById("postPrice").value = p.price || '';
     document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
     document.getElementById("postImage").value = p.image || '';
+    document.getElementById("postImageAlt").value = p.imageAlt || '';
     document.getElementById("postSlug").value = p.slug || id;
+    document.getElementById("postStatus").value = p.status || 'published';
     document.getElementById("postMetaDesc").value = p.metaDesc || '';
+    document.getElementById("postFocusKeyword").value = p.focusKeyword || '';
     document.getElementById("postSpecs").value = specsToText(p.specs);
     document.getElementById("postDescription").value = (p.description || []).join('\n\n');
     document.getElementById("postOrder").value = p.order || '';
+    refreshPostFormHelpers();
 
     document.getElementById("postFormTitle").textContent = "✏️ পোস্ট এডিট করুন";
     document.getElementById("savePostBtn").textContent = "আপডেট করুন";
@@ -607,15 +685,22 @@ function editPost(id) {
 function cancelPostEdit() {
   document.getElementById("editingPostId").value = "";
   document.getElementById("postName").value = '';
+  document.getElementById("postMetaTitle").value = '';
   document.getElementById("postTag").value = '';
+  document.getElementById("postShortDesc").value = '';
+  document.getElementById("postTags").value = '';
   document.getElementById("postPrice").value = '';
   document.getElementById("postPriceUnit").value = 'প্রতি পিস';
   document.getElementById("postImage").value = '';
+  document.getElementById("postImageAlt").value = '';
   document.getElementById("postSlug").value = '';
+  document.getElementById("postStatus").value = 'published';
   document.getElementById("postMetaDesc").value = '';
+  document.getElementById("postFocusKeyword").value = '';
   document.getElementById("postSpecs").value = '';
   document.getElementById("postDescription").value = '';
   document.getElementById("postOrder").value = '';
+  refreshPostFormHelpers();
 
   document.getElementById("postFormTitle").textContent = "➕ নতুন পোস্ট যোগ করুন";
   document.getElementById("savePostBtn").textContent = "পোস্ট সেভ করুন";
@@ -656,10 +741,15 @@ function buildPostHtml(post) {
   const specListHtml = post.specs.map(s =>
     `          <li><span>${escapeHtml(s.label)}</span><span>${escapeHtml(s.value)}</span></li>`
   ).join('\n');
-  const descHtml = post.description.map(p => `      <p>\n        ${escapeHtml(p)}\n      </p>`).join('\n');
+  // প্যারাগ্রাফের ভেতরের একক লাইনব্রেক এখন <br>-এ কনভার্ট হয় — নাহলে ব্রাউজারে
+  // সব লাইন একসাথে জোড়া লেগে যায় (HTML প্লেইন নিউলাইন দেখায় না)
+  const descHtml = post.description.map(p =>
+    `      <p>\n        ${escapeHtml(p).split('\n').map(l => l.trim()).join('<br>\n        ')}\n      </p>`
+  ).join('\n');
   const relatedHtml = buildRelatedLinksHtml(post.slug);
-  const jsonLdDesc = (post.metaDesc || post.description[0] || '').replace(/"/g, '\\"');
-  const title = `${post.name} — দাম ও বৈশিষ্ট্য | Maamme.com`;
+  const jsonLdDesc = (post.metaDesc || post.shortDesc || post.description[0] || '').replace(/"/g, '\\"');
+  const title = post.metaTitle || `${post.name} — দাম ও বৈশিষ্ট্য | Maamme.com`;
+  const imageAltText = post.imageAlt || post.name;
   const pageUrl = `${SITE_ORIGIN}/products/${post.slug}.html`;
   const imageUrl = `${SITE_ORIGIN}/images/${post.image}`;
 
@@ -789,7 +879,7 @@ function buildPostHtml(post) {
     <div class="product-layout">
 
       <div class="product-photo-wrap">
-        <img src="../images/${escapeHtml(post.image)}" alt="${escapeHtml(post.name)}">
+        <img src="../images/${escapeHtml(post.image)}" alt="${escapeHtml(imageAltText)}">
       </div>
 
       <div class="product-info">
@@ -897,6 +987,10 @@ function downloadPostHtml() {
   const post = readPostForm();
   if (!post.name || !post.price || !post.image || !post.slug || post.description.length === 0) {
     alert("নাম, দাম, ছবি, slug ও বিবরণ — এগুলো আগে পূরণ করুন।");
+    return;
+  }
+  if (isMissingImageExtension(post.image)) {
+    alert("⚠️ ছবির ফাইলনেমে extension নেই (.jpeg/.jpg/.png/.webp) — যেমন: chair1.jpeg। এটা ছাড়া ডাউনলোড করা HTML ফাইলে ছবি ভাঙা দেখাবে।");
     return;
   }
   const html = buildPostHtml(post);

@@ -136,11 +136,22 @@
             <h3 id="postFormTitle">➕ নতুন পোস্ট যোগ করুন</h3>
             <input type="hidden" id="editingPostId" value="">
 
-            <label>প্রোডাক্টের নাম — যেমন: কাউন্টার চেয়ার-কালো</label>
+            <label>প্রোডাক্টের নাম (Title / H1 — পেজে হেডিং হিসেবে দেখাবে) — যেমন: কাউন্টার চেয়ার-কালো</label>
             <input type="text" id="postName" placeholder="কাউন্টার চেয়ার-কালো">
+            <p id="postNameWarn" style="font-size:12px; color:#c0533e; margin:-4px 0 0; display:none;">⚠️ নামটা বেশি লম্বা — Google সার্চে টাইটেল কেটে যেতে পারে (Meta Title ফিল্ডে আলাদা করে ছোট টাইটেল দিন)।</p>
+
+            <label>Meta Title (ঐচ্ছিক — Google-এ যেই টাইটেল দেখাবে, পেজের H1 থেকে আলাদা রাখতে চাইলে দিন। ফাঁকা রাখলে নাম থেকেই অটো তৈরি হবে)</label>
+            <input type="text" id="postMetaTitle" placeholder="কাউন্টার চেয়ার-কালো — দাম ৳৩,৫০০ | Maamme.com">
+            <p id="postMetaTitleCounter" style="font-size:11.5px; color:#6b7690; margin:-4px 0 0;">0 অক্ষর (সুপারিশ: ৬০-এর মধ্যে)</p>
 
             <label>ক্যাটাগরি/eyebrow ট্যাগ — যেমন: ক্লোজ কালেকশন</label>
             <input type="text" id="postTag" placeholder="ক্লোজ কালেকশন">
+
+            <label>Short Description (ঐচ্ছিক — এক লাইনের সংক্ষিপ্ত বিবরণ, ভবিষ্যতে কার্ড/fallback-এ ব্যবহার হবে)</label>
+            <input type="text" id="postShortDesc" placeholder="মজবুত স্টিল কাউন্টার চেয়ার, ৫টা রঙে পাওয়া যায়">
+
+            <label>Category + Tags (ঐচ্ছিক, কমা দিয়ে আলাদা — শুধু internal organizing/সার্চের জন্য, গ্রিডে দেখাবে না) — যেমন: কাউন্টার চেয়ার, স্টিল ফার্নিচার, ক্লোজ কালেকশন</label>
+            <input type="text" id="postTags" placeholder="কাউন্টার চেয়ার, স্টিল ফার্নিচার">
 
             <label>দাম (টাকা, শুধু সংখ্যা)</label>
             <input type="number" id="postPrice" placeholder="3500">
@@ -148,14 +159,28 @@
             <label>দামের ইউনিট লেবেল</label>
             <input type="text" id="postPriceUnit" placeholder="প্রতি পিস" value="প্রতি পিস">
 
-            <label>ছবির ফাইলের নাম (images ফোল্ডারে যেই নামে আছে) — যেমন: chair1.jpeg</label>
+            <label>ছবির ফাইলের নাম, extension (.jpeg/.jpg/.png/.webp) সহ (images ফোল্ডারে যেই নামে আছে) — যেমন: chair1.jpeg</label>
             <input type="text" id="postImage" placeholder="chair1.jpeg">
+
+            <label>Alt Text (ঐচ্ছিক — ছবির বিবরণ, স্ক্রিন-রিডার ও Google Image সার্চের জন্য। ফাঁকা রাখলে প্রোডাক্টের নামই ব্যবহার হবে)</label>
+            <input type="text" id="postImageAlt" placeholder="কাউন্টার চেয়ার কালো - স্টিল ফ্রেম, চামড়ার কুশন">
 
             <label>Slug (ইংরেজি, স্পেস ছাড়া, ইউনিক, .html ছাড়া) — যেমন: kaunter-chair-kalo</label>
             <input type="text" id="postSlug" placeholder="new-post-slug">
 
+            <label>Status</label>
+            <select id="postStatus">
+                <option value="published">✅ Published (লাইভ)</option>
+                <option value="draft">📝 Draft (এখনো লাইভ না)</option>
+            </select>
+
             <label>SEO মেটা বিবরণ (গুগল সার্চে যেই লাইনটা দেখাবে, ১৫০-১৬০ অক্ষরের মধ্যে রাখুন)</label>
             <input type="text" id="postMetaDesc" placeholder="মজবুত স্টিল ফ্রেম, আরামদায়ক কুশন... দাম ৳৩,৫০০। ১ বছর গ্যারান্টি।">
+            <p id="postMetaDescCounter" style="font-size:11.5px; color:#6b7690; margin:-4px 0 0;">0 / ১৬০ অক্ষর</p>
+
+            <label>Focus Keyword (ঐচ্ছিক — যেই মূল কি-ওয়ার্ডে র‍্যাঙ্ক করাতে চান, যেমন: "কাউন্টার চেয়ার দাম")</label>
+            <input type="text" id="postFocusKeyword" placeholder="কাউন্টার চেয়ার দাম">
+            <div id="focusKeywordChecklist" style="display:none; font-size:12.5px; margin-top:6px; line-height:1.9;"></div>
 
             <label>স্পেসিফিকেশন — প্রতি লাইনে "লেবেল: মান" ফরম্যাটে লিখুন</label>
             <textarea id="postSpecs" rows="6" placeholder="ফ্রেম: সলিড স্টিল, পাউডার কোটেড
@@ -164,8 +189,9 @@
 রঙ: কালো
 গ্যারান্টি: ১ বছর
 ডেলিভারি: সমগ্র বাংলাদেশ জুড়ে"></textarea>
+            <p id="postSpecsWarn" style="font-size:12px; color:#c0533e; margin:-4px 0 0; display:none;">⚠️ কিছু লাইনে ":" নেই — সেই লাইনগুলোর মান খালি সেভ হবে।</p>
 
-            <label>বিস্তারিত বিবরণ — প্রতিটা প্যারাগ্রাফের মাঝে একটা খালি লাইন রাখুন</label>
+            <label>বিস্তারিত বিবরণ — প্রতিটা প্যারাগ্রাফের মাঝে একটা খালি লাইন রাখুন (একই প্যারাগ্রাফের ভেতরের লাইনব্রেক এখন সঠিকভাবে দেখাবে)</label>
             <textarea id="postDescription" rows="10" placeholder="প্রথম প্যারাগ্রাফ...
 
 দ্বিতীয় প্যারাগ্রাফ...
@@ -180,7 +206,7 @@
             <button onclick="cancelPostEdit()" id="cancelPostEditBtn" style="background:#999; display:none; margin-top:8px;">বাতিল করুন</button>
             <p id="postFormMsg" style="font-size:13px; margin-top:8px;"></p>
             <p style="font-size:12.5px; margin-top:10px; color:#6b7690; line-height:1.6;">
-                ℹ️ সেভ করলে পোস্টটা products পেজের লিস্টিং-এ (গ্রিডে) সাথে সাথে দেখা যাবে। কিন্তু প্রোডাক্টের নিজস্ব বিস্তারিত পেজ (SEO সহ) লাইভ করতে — "HTML ফাইল ডাউনলোড করুন" বাটনে ক্লিক করে ফাইলটা ডাউনলোড করে, সেটা আপনার GitHub রিপোর প্রোডাক্টস ফোল্ডারে আপলোড করে দিন (ফাইলের নাম হবে slug.html)।
+                ℹ️ সেভ করলে পোস্টটা products পেজের লিস্টিং-এ (গ্রিডে) সাথে সাথে দেখা যাবে (যদি Status = Published হয়)। কিন্তু প্রোডাক্টের নিজস্ব বিস্তারিত পেজ (SEO সহ) লাইভ করতে — "HTML ফাইল ডাউনলোড করুন" বাটনে ক্লিক করে ফাইলটা ডাউনলোড করে, সেটা আপনার GitHub রিপোর প্রোডাক্টস ফোল্ডারে আপলোড করে দিন (ফাইলের নাম হবে slug.html)।
             </p>
         </div>
 
