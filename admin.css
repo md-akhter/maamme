@@ -229,6 +229,73 @@
             background:var(--rust-dark);
         }
 
+        /* Show on Homepage — টগল সুইচ (Category-এর সাথে সম্পূর্ণ আলাদা, স্বাধীন সেটিং) */
+        .toggle-row{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin-top:14px;
+            padding:12px 14px;
+            background:#fafafa;
+            border:1px solid #eee;
+            border-radius:6px;
+        }
+
+        .toggle-row .toggle-label{
+            font-size:13.5px;
+            color:#333;
+            font-weight:600;
+        }
+
+        .toggle-row .toggle-sub{
+            font-size:11.5px;
+            color:#6b7690;
+            margin-top:2px;
+        }
+
+        .toggle-switch{
+            position:relative;
+            display:inline-block;
+            width:44px;
+            height:24px;
+            flex-shrink:0;
+        }
+
+        .toggle-switch input{
+            opacity:0;
+            width:0;
+            height:0;
+        }
+
+        .toggle-slider{
+            position:absolute;
+            cursor:pointer;
+            top:0; left:0; right:0; bottom:0;
+            background:#ccc;
+            border-radius:24px;
+            transition:.2s ease;
+        }
+
+        .toggle-slider::before{
+            content:"";
+            position:absolute;
+            height:18px;
+            width:18px;
+            left:3px;
+            bottom:3px;
+            background:#fff;
+            border-radius:50%;
+            transition:.2s ease;
+        }
+
+        .toggle-switch input:checked + .toggle-slider{
+            background:var(--brass);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before{
+            transform:translateX(20px);
+        }
+
         .stats-bar{
             display:flex;
             flex-wrap:wrap;

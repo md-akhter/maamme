@@ -60,11 +60,15 @@ function loadProducts() {
       snapshot.forEach((doc) => {
         const p = doc.data();
 
-        // শুধু Category = "Home" প্রোডাক্ট হোমপেজে দেখানো হয় — Furniture/Fashion
-        // প্রোডাক্ট এখন আলাদা furniture/fashion পেজে দেখানো হবে। পুরোনো প্রোডাক্ট
-        // যেগুলোতে এখনো category field নেই (Admin panel-এর নতুন dropdown যোগ হওয়ার
-        // আগে তৈরি), সেগুলো backward-compatibility-র জন্য Home হিসেবেই ধরা হচ্ছে।
-        if (p.category && p.category !== 'Home') return;
+        // হোমপেজে একটা প্রোডাক্ট দেখানো হয় দুই শর্তের যেকোনো একটায়:
+        // ১) Category = "Home" (এটাই তার স্থায়ী জায়গা), অথবা
+        // ২) Category Furniture/Fashion হলেও "Show on Homepage" টগল ON করা আছে —
+        //    তখন সে তার নিজের Category পেজে থাকার পাশাপাশি Homepage-এও দেখাবে।
+        // Category আর Homepage Display সম্পূর্ণ আলাদা সেটিং, একটা আরেকটাকে বদলায় না।
+        // পুরনো প্রোডাক্ট (dropdown যোগ হওয়ার আগে তৈরি, category field নেই) ব্যাকওয়ার্ড-
+        // কম্প্যাটিবিলিটির জন্য Home হিসেবেই ধরা হচ্ছে।
+        const isHomeCategory = !p.category || p.category === 'Home';
+        if (!isHomeCategory && !p.showOnHomepage) return;
 
         const priceFormatted = Number(p.price).toLocaleString('en-IN');
 

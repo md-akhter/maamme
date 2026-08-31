@@ -310,7 +310,7 @@ function loadProducts() {
           <div class="order-item">
             <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
             <div>${escapeHtml(p.fullName)}</div>
-            <div class="order-note">${escapeHtml(p.tag)} · ${escapeHtml(p.category || 'Home')}${p.subCategory ? ' - ' + escapeHtml(p.subCategory) : ''} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
+            <div class="order-note">${escapeHtml(p.tag)} · ${escapeHtml(p.category || 'Home')}${p.subCategory ? ' - ' + escapeHtml(p.subCategory) : ''}${p.showOnHomepage ? ' · 🏠 Homepage-এও দেখাচ্ছে' : ''} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
               <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
@@ -351,13 +351,18 @@ function saveProduct() {
   if (category === "Furniture") subCategory = document.getElementById("pFurnitureSub").value;
   else if (category === "Fashion") subCategory = document.getElementById("pFashionSub").value;
 
+  // Category আর Homepage Display সম্পূর্ণ আলাদা সেটিং — Category ঠিক করে প্রোডাক্টটা
+  // কোন পেজে (Home/Furniture/Fashion) স্থায়ীভাবে থাকবে, আর এই টগল ঠিক করে সেটা
+  // অতিরিক্তভাবে Homepage-এও দেখাবে কিনা (Furniture/Fashion প্রোডাক্টের জন্য)
+  const showOnHomepage = document.getElementById("pShowOnHomepage").checked;
+
   if (!name || !fullName || !price || !image || !slug) {
     msg.style.color = "#c0533e";
     msg.textContent = "নাম, পুরো নাম, দাম, ছবি ও slug — এই ৫টা অবশ্যই দিতে হবে।";
     return;
   }
 
-  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory };
+  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory, showOnHomepage };
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
   // এডিট মোডে slug বদলে গেলে batch ব্যবহার করা হচ্ছে যাতে নতুন doc তৈরি ও পুরনো doc
@@ -400,6 +405,7 @@ function editProduct(id) {
     onProductCategoryChange();
     if (p.category === 'Furniture') document.getElementById("pFurnitureSub").value = p.subCategory || 'steel-chair';
     if (p.category === 'Fashion') document.getElementById("pFashionSub").value = p.subCategory || 'three-piece';
+    document.getElementById("pShowOnHomepage").checked = !!p.showOnHomepage;
 
     document.getElementById("productFormTitle").textContent = "✏️ প্রোডাক্ট এডিট করুন";
     document.getElementById("saveProductBtn").textContent = "আপডেট করুন";
@@ -421,6 +427,7 @@ function cancelEdit() {
 
   document.getElementById("pCategory").value = 'Home';
   onProductCategoryChange();
+  document.getElementById("pShowOnHomepage").checked = false;
 
   document.getElementById("productFormTitle").textContent = "➕ নতুন প্রোডাক্ট যোগ করুন";
   document.getElementById("saveProductBtn").textContent = "প্রোডাক্ট যোগ করুন";
