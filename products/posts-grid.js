@@ -41,6 +41,12 @@ db.collection('posts').orderBy('order', 'asc').get()
     let html = '';
     snapshot.forEach((doc) => {
       const p = doc.data();
+
+      // Status = "draft" পোস্ট এখনো লাইভ না, তাই গ্রিডে দেখানো হবে না। পুরনো পোস্ট
+      // (Status ফিল্ড যোগ হওয়ার আগে তৈরি) ব্যাকওয়ার্ড-কম্প্যাটিবিলিটির জন্য Published
+      // হিসেবেই ধরা হচ্ছে।
+      if (p.status === 'draft') return;
+
       const slug = p.slug || doc.id;
       html += `
       <a href="${escapeHtml(slug)}.html" class="product-card-link">
@@ -55,7 +61,7 @@ db.collection('posts').orderBy('order', 'asc').get()
       </a>`;
     });
 
-    postsGrid.innerHTML = html;
+    postsGrid.innerHTML = html || '<p style="grid-column:1/-1;">এখনো কোনো প্রোডাক্ট পোস্ট নেই।</p>';
   })
   .catch((err) => {
     postsGrid.innerHTML = '<p style="grid-column:1/-1;">প্রোডাক্ট লোড করতে সমস্যা হয়েছে। একটু পর আবার চেষ্টা করুন।</p>';
