@@ -79,20 +79,47 @@ function renderGrid(activeKey) {
   let html = '';
   filtered.forEach((p) => {
     const slug = p.slug || p.id;
+    const detailUrl = `../products/${escapeHtml(slug)}.html`;
     html += `
-      <a href="../products/${escapeHtml(slug)}.html" class="product-card-link">
-        <div class="card">
+      <div class="card reveal in">
+        <a href="${detailUrl}" style="display:block; text-decoration:none; color:inherit;">
           <div class="card-art"><img class="card-photo" src="../${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
-          <div class="card-body">
-            <div class="eyebrow" style="color:var(--brass);">${escapeHtml(p.tag || '')}</div>
-            <h2>${escapeHtml(p.name)}</h2>
-            <div class="price-line">${formatTakaBn(p.price)}<span>${escapeHtml(p.priceUnit || 'প্রতি পিস')}</span></div>
+        </a>
+        <div class="card-body">
+          <div class="tag">${escapeHtml(p.tag || '')}</div>
+          <a href="${detailUrl}" style="text-decoration:none; color:inherit;"><h3>${escapeHtml(p.name)}</h3></a>
+          <div class="card-foot">
+            <div class="price">${formatTakaBn(p.price)}<small>${escapeHtml(p.priceUnit || 'প্রতি পিস')}</small></div>
+            <a class="pick-btn" style="display:inline-block; text-decoration:none;" href="/?product=${encodeURIComponent(slug)}#order">অর্ডার করুন</a>
           </div>
+          <button class="copy-link-btn" type="button" data-slug="${escapeHtml(slug)}">🔗 লিংক কপি করুন</button>
         </div>
-      </a>`;
+      </div>`;
   });
   grid.innerHTML = html;
 }
+
+// "লিংক কপি করুন" বাটনে ক্লিক — প্রোডাক্ট ডিটেইল পেজের লিংক কপি হয়।
+// grid-এর উপর event delegation ব্যবহার করা হয়েছে, কারণ renderGrid() প্রতিবার
+// innerHTML রিপ্লেস করে, তাই কার্ডের উপর সরাসরি addEventListener বসালে সেটা
+// ক্যাটাগরি চিপ পাল্টানোর পর হারিয়ে যেত।
+grid.addEventListener('click', (e) => {
+  const btn = e.target.closest('.copy-link-btn');
+  if (!btn) return;
+  const slug = btn.getAttribute('data-slug');
+  const url = location.origin + '/products/' + slug + '.html';
+  const original = btn.textContent;
+  const showCopied = () => {
+    btn.textContent = '✓ লিংক কপি হয়েছে';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(showCopied).catch(() => window.prompt('লিংকটি কপি করুন:', url));
+  } else {
+    window.prompt('লিংকটি কপি করুন:', url);
+  }
+});
 
 db.collection('products').where('category', '==', 'Fashion').orderBy('order', 'asc').get()
   .then((snapshot) => {
