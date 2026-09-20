@@ -88,13 +88,13 @@ function loadProducts() {
               <p>${p.description || ''}</p>
               <div class="card-foot">
                 <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
-                <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}">অর্ডার করুন</button>
+                <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}" data-slug="${p.slug}">অর্ডার করুন</button>
               </div>
               <button class="copy-link-btn" type="button" data-slug="${p.slug}">🔗 লিংক কপি করুন</button>
             </div>
           </div>`;
 
-        optionsHtml += `<option data-price="${p.price}">${p.fullName} — ৳${priceFormatted}</option>`;
+        optionsHtml += `<option data-price="${p.price}" data-slug="${p.slug}">${p.fullName} — ৳${priceFormatted}</option>`;
       });
 
       productsGrid.innerHTML = gridHtml;
@@ -104,6 +104,19 @@ function loadProducts() {
       customOption.insertAdjacentHTML('beforebegin', optionsHtml);
 
       initProductInteractions();
+
+      // furniture/fashion পেজের "অর্ডার করুন" বাটন থেকে "/?product=slug#order" ফরম্যাটে আসলে,
+      // সেই স্লাগ মিলিয়ে dropdown-এ প্রোডাক্টটা অটো-সিলেক্ট করা ও কার্ড হাইলাইট করা হয়
+      const preselectSlug = new URLSearchParams(location.search).get('product');
+      if (preselectSlug) {
+        const matchingOption = productSelect.querySelector(`option[data-slug="${preselectSlug}"]`);
+        if (matchingOption) {
+          productSelect.value = matchingOption.value;
+          updateTotal();
+          const matchingBtn = document.querySelector(`.pick-btn[data-slug="${preselectSlug}"]`);
+          if (matchingBtn) matchingBtn.classList.add('active');
+        }
+      }
 
       // URL-এ যদি #slug থাকে (কেউ শেয়ার করা লিংকে ঢুকেছে), সেই প্রোডাক্টে স্ক্রল করা
       if (location.hash) {
