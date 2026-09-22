@@ -354,6 +354,20 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
       note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
       document.getElementById('trackHint').style.display = 'block';
+
+      // Meta Pixel — Firestore-এ অর্ডার সফলভাবে সেভ হওয়ার পরই Purchase ইভেন্ট পাঠানো
+      // হচ্ছে (আগে না, যাতে ব্যর্থ/অসম্পূর্ণ অর্ডার ভুলভাবে Purchase হিসেবে কাউন্ট না হয়)।
+      // orderId-কে event_id হিসেবে পাঠানো হচ্ছে — ভবিষ্যতে Conversions API (সার্ভার-সাইড)
+      // যোগ হলে একই orderId মিললে Meta দুইবার একই অর্ডার কাউন্ট করবে না (deduplication)।
+      if (typeof fbq === 'function') {
+        fbq('track', 'Purchase', {
+          value: lastOrder.total,
+          currency: 'BDT',
+          content_name: lastOrder.product,
+          content_type: 'product',
+          num_items: lastOrder.qty
+        }, { eventID: lastOrder.orderId });
+      }
     })
     .catch((err) => {
       console.error('Firestore save failed:', err);
