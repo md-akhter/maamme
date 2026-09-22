@@ -313,16 +313,20 @@ function loadProducts() {
             <div class="order-note">${escapeHtml(p.tag)} · ${escapeHtml(p.category || 'Home')}${p.subCategory ? ' - ' + escapeHtml(p.subCategory) : ''}${p.showOnHomepage ? ' · 🏠 Homepage-এও দেখাচ্ছে' : ''} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(doc.id)}">✏️ এডিট</button>
+              <button class="small-btn duplicate-btn" data-id="${escapeHtml(doc.id)}">📋 কপি</button>
               <button class="small-btn delete-btn" data-id="${escapeHtml(doc.id)}">🗑️ ডিলিট</button>
             </div>
           </div>`;
       });
       list.innerHTML = html;
 
-      document.querySelectorAll('.edit-btn').forEach(btn => {
+      document.querySelectorAll('#productsList .edit-btn').forEach(btn => {
         btn.addEventListener('click', () => editProduct(btn.getAttribute('data-id')));
       });
-      document.querySelectorAll('.delete-btn').forEach(btn => {
+      document.querySelectorAll('#productsList .duplicate-btn').forEach(btn => {
+        btn.addEventListener('click', () => duplicateProduct(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('#productsList .delete-btn').forEach(btn => {
         btn.addEventListener('click', () => deleteProduct(btn.getAttribute('data-id')));
       });
     })
@@ -414,6 +418,37 @@ function editProduct(id) {
   });
 }
 
+// পুরনো প্রোডাক্টের সব তথ্য (নাম, বিবরণ, দাম, ট্যাগ, ক্যাটাগরি...) ফর্মে বসিয়ে দেয়,
+// শুধু slug আর ছবি খালি রাখে — এই দুটোই কালার-ভেদে বদলায়। Save করলে editingProductId
+// খালি থাকায় এটা পুরনো প্রোডাক্ট আপডেট না করে নতুন একটা প্রোডাক্ট হিসেবে তৈরি হবে।
+function duplicateProduct(id) {
+  db.collection("products").doc(id).get().then((doc) => {
+    if (!doc.exists) return;
+    const p = doc.data();
+    document.getElementById("editingProductId").value = "";
+    document.getElementById("pName").value = p.name || '';
+    document.getElementById("pFullName").value = p.fullName || '';
+    document.getElementById("pTag").value = p.tag || '';
+    document.getElementById("pDescription").value = p.description || '';
+    document.getElementById("pPrice").value = p.price || '';
+    document.getElementById("pImage").value = ''; // নতুন কালারের ছবি — নিজে দিন
+    document.getElementById("pSlug").value = ''; // slug ইউনিক হতে হয় — নিজে দিন
+    document.getElementById("pOrder").value = p.order || '';
+
+    document.getElementById("pCategory").value = p.category || 'Home';
+    onProductCategoryChange();
+    if (p.category === 'Furniture') document.getElementById("pFurnitureSub").value = p.subCategory || 'steel-chair';
+    if (p.category === 'Fashion') document.getElementById("pFashionSub").value = p.subCategory || 'three-piece';
+    document.getElementById("pShowOnHomepage").checked = !!p.showOnHomepage;
+
+    document.getElementById("productFormTitle").textContent = "📋 কপি থেকে নতুন প্রোডাক্ট — নতুন Slug ও ছবি দিন";
+    document.getElementById("saveProductBtn").textContent = "প্রোডাক্ট যোগ করুন";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    document.getElementById("productFormTitle").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("pSlug").focus();
+  });
+}
+
 function cancelEdit() {
   document.getElementById("editingProductId").value = "";
   document.getElementById("pName").value = '';
@@ -478,6 +513,7 @@ function loadPosts() {
             <div class="order-note">${escapeHtml(p.tag || '')}${p.status === 'draft' ? ' · 📝 Draft' : ' · ✅ Published'} · slug: ${escapeHtml(p.slug || p.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
               <button class="small-btn edit-btn" data-id="${escapeHtml(p.id)}">✏️ এডিট</button>
+              <button class="small-btn duplicate-btn" data-id="${escapeHtml(p.id)}">📋 কপি</button>
               <button class="small-btn" data-id="${escapeHtml(p.id)}" data-action="download">📥 HTML</button>
               <button class="small-btn delete-btn" data-id="${escapeHtml(p.id)}">🗑️ ডিলিট</button>
             </div>
@@ -487,6 +523,9 @@ function loadPosts() {
 
       document.querySelectorAll('#postsList .edit-btn').forEach(btn => {
         btn.addEventListener('click', () => editPost(btn.getAttribute('data-id')));
+      });
+      document.querySelectorAll('#postsList .duplicate-btn').forEach(btn => {
+        btn.addEventListener('click', () => duplicatePost(btn.getAttribute('data-id')));
       });
       document.querySelectorAll('#postsList .delete-btn').forEach(btn => {
         btn.addEventListener('click', () => deletePost(btn.getAttribute('data-id')));
@@ -679,6 +718,40 @@ function editPost(id) {
     document.getElementById("savePostBtn").textContent = "আপডেট করুন";
     document.getElementById("cancelPostEditBtn").style.display = "block";
     document.getElementById("postFormTitle").scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+// পুরনো পোস্টের সব তথ্য (নাম, বিবরণ, স্পেক, দাম, SEO ফিল্ড...) ফর্মে বসিয়ে দেয়,
+// শুধু slug আর ছবি খালি রাখে — এই দুটোই কালার-ভেদে বদলায়। Save করলে editingPostId
+// খালি থাকায় এটা পুরনো পোস্ট আপডেট না করে নতুন একটা পোস্ট হিসেবে তৈরি হবে।
+function duplicatePost(id) {
+  db.collection("posts").doc(id).get().then((doc) => {
+    if (!doc.exists) return;
+    const p = doc.data();
+    document.getElementById("editingPostId").value = "";
+    document.getElementById("postName").value = p.name || '';
+    document.getElementById("postMetaTitle").value = p.metaTitle || '';
+    document.getElementById("postTag").value = p.tag || '';
+    document.getElementById("postShortDesc").value = p.shortDesc || '';
+    document.getElementById("postTags").value = (p.tags || []).join(', ');
+    document.getElementById("postPrice").value = p.price || '';
+    document.getElementById("postPriceUnit").value = p.priceUnit || 'প্রতি পিস';
+    document.getElementById("postImage").value = ''; // নতুন কালারের ছবি — নিজে দিন
+    document.getElementById("postImageAlt").value = p.imageAlt || '';
+    document.getElementById("postSlug").value = ''; // slug ইউনিক হতে হয় — নিজে দিন
+    document.getElementById("postStatus").value = p.status || 'published';
+    document.getElementById("postMetaDesc").value = p.metaDesc || '';
+    document.getElementById("postFocusKeyword").value = p.focusKeyword || '';
+    document.getElementById("postSpecs").value = specsToText(p.specs);
+    document.getElementById("postDescription").value = (p.description || []).join('\n\n');
+    document.getElementById("postOrder").value = p.order || '';
+    refreshPostFormHelpers();
+
+    document.getElementById("postFormTitle").textContent = "📋 কপি থেকে নতুন পোস্ট — নতুন Slug ও ছবি দিন";
+    document.getElementById("savePostBtn").textContent = "পোস্ট সেভ করুন";
+    document.getElementById("cancelPostEditBtn").style.display = "block";
+    document.getElementById("postFormTitle").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("postSlug").focus();
   });
 }
 
