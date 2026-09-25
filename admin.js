@@ -126,14 +126,24 @@ function renderOrders() {
     filtered.forEach((o) => {
       const total = o.total ? Number(o.total).toLocaleString('en-IN') : '—';
       const status = o.status || 'pending';
+      const timeStr = orderTimeStr(o);
       itemsHtml += `
         <div class="order-item status-${status}">
-          <div class="order-top"><b>#${escapeHtml(o.orderId)}</b><span>${escapeHtml(o.date)}</span></div>
+          <div class="order-top">
+            <b>#${escapeHtml(o.orderId)}</b>
+            <div class="order-date-time">
+              <span class="order-date">${escapeHtml(o.date)}</span>
+              ${timeStr ? `<span class="order-time">${escapeHtml(timeStr)}</span>` : ''}
+            </div>
+          </div>
           <div>${escapeHtml(o.name)} — ${escapeHtml(o.phone)}</div>
           <div>${escapeHtml(o.product)} × ${escapeHtml(o.quantity)}</div>
           <div>${escapeHtml(o.address)}</div>
           ${o.note ? `<div class="order-note">মন্তব্য: ${escapeHtml(o.note)}</div>` : ''}
           <div class="order-total">৳ ${escapeHtml(total)}</div>
+
+          <input type="text" class="courier-input" data-id="${escapeHtml(o.id)}" data-field="courierNote" value="${escapeHtml(o.courierNote || '')}" placeholder="কালার / হ্যান্ডেল">
+
           <div class="status-row">
             <label>স্ট্যাটাস: </label>
             <select class="status-select" data-id="${escapeHtml(o.id)}">
@@ -159,6 +169,43 @@ function renderOrders() {
       const newStatus = e.target.value;
       updateOrderStatus(orderId, newStatus);
     });
+  });
+
+  // কালার ও হ্যান্ডেল ইনপুট — বক্স থেকে ফোকাস সরে গেলে (blur/change) সেভ হয়,
+  // প্রতিটা অক্ষর টাইপ করার সাথে সাথে না — নাহলে বারবার Firestore কল হতো
+  document.querySelectorAll('.courier-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const orderId = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      saveOrderField(orderId, field, e.target.value);
+    });
+  });
+}
+
+// createdAt (Firestore Timestamp) থেকে "HH:MM" ফরম্যাটে সময় বের করে —
+// পুরনো অর্ডারে createdAt না থাকলে খালি স্ট্রিং রিটার্ন করে (তখন সময় দেখানো হবে না)
+function orderTimeStr(o) {
+  if (!o.createdAt || typeof o.createdAt.toDate !== 'function') return '';
+  try {
+    const d = o.createdAt.toDate();
+    return d.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', hour12: true });
+  } catch (e) {
+    return '';
+  }
+}
+
+// কালার / হ্যান্ডেল ইনপুটের ভ্যালু Firestore-এ সেভ করে (status আপডেটের মতোই)
+function saveOrderField(orderId, field, value) {
+  db.collection("orders").doc(orderId).update({
+    [field]: value
+  })
+  .then(() => {
+    const o = allOrders.find(x => x.id === orderId);
+    if (o) o[field] = value;
+  })
+  .catch((err) => {
+    alert("সেভ করতে সমস্যা হয়েছে।");
+    console.error("Order field update error:", err);
   });
 }
 
@@ -1131,14 +1178,16 @@ function exportOrdersToCSV() {
     alert("ডাউনলোড করার মতো কোনো অর্ডার নেই।");
     return;
   }
-  const headers = ['Order ID', 'তারিখ', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
+  const headers = ['Order ID', 'তারিখ', 'সময়', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'কালার/হ্যান্ডেল', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
   const rows = allOrders.map(o => [
     o.orderId || '',
     excelSafeText(o.date || ''),
+    orderTimeStr(o),
     o.name || '',
     excelSafeText(o.phone || ''),
     o.product || '',
     o.quantity || '',
+    o.courierNote || '',
     o.address || '',
     o.note || '',
     o.total || 0,
