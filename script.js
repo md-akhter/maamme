@@ -21,6 +21,16 @@ function formatTaka(n) {
   return '৳ ' + n.toLocaleString('en-IN');
 }
 
+// অ্যাডমিনে বিবরণ এখন একাধিক লাইনে (বুলেট আকারে) লেখা যায় — এই ফাংশন সেই লাইন-ব্রেকগুলো
+// কার্ডে ঠিকভাবে (প্রতিটা লাইন আলাদা করে) দেখানোর জন্য \n কে <br> এ বদলে দেয়, আর টেক্সট
+// এসকেপ করে দেয় যাতে বিবরণে ভুলবশত < > জাতীয় চিহ্ন থাকলেও কার্ডের HTML না ভাঙে।
+function formatDescription(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
 const BN_DIGITS = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
 const BN_MONTHS = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 
@@ -85,7 +95,7 @@ function loadProducts() {
                 <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
                 <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
               </div>
-              <p>${p.description || ''}</p>
+              <p>${formatDescription(p.description)}</p>
               <div class="card-foot">
                 <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
                 <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}" data-slug="${p.slug}">অর্ডার করুন</button>
