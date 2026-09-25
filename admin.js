@@ -142,14 +142,14 @@ function renderOrders() {
           ${o.note ? `<div class="order-note">মন্তব্য: ${escapeHtml(o.note)}</div>` : ''}
           <div class="order-total">৳ ${escapeHtml(total)}</div>
 
-          <input type="text" class="courier-input" data-id="${escapeHtml(o.id)}" data-field="courierNote" value="${escapeHtml(o.courierNote || '')}" placeholder="কালার / হ্যান্ডেল">
-
           <div class="status-row">
             <label>স্ট্যাটাস: </label>
             <select class="status-select" data-id="${escapeHtml(o.id)}">
               ${ORDER_STATUSES.map(s => `<option value="${s.key}" ${status === s.key ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
             </select>
           </div>
+
+          <input type="text" class="courier-input" data-id="${escapeHtml(o.id)}" data-field="courierNote" value="${escapeHtml(o.courierNote || '')}" placeholder="এখানে লিখুন">
         </div>`;
     });
   }
