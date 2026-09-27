@@ -83,6 +83,7 @@ function loadOrders() {
       snapshot.forEach((doc) => allOrders.push({ id: doc.id, ...doc.data() }));
       document.getElementById('ordersCount').textContent = allOrders.length ? allOrders.length : '';
       renderOrders();
+      updateCsvFilterCount();
     })
     .catch((err) => {
       list.innerHTML = "<p>অর্ডার লোড করতে সমস্যা হয়েছে।</p>";
@@ -147,6 +148,7 @@ function renderOrders() {
             <select class="status-select" data-id="${escapeHtml(o.id)}">
               ${ORDER_STATUSES.map(s => `<option value="${s.key}" ${status === s.key ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('')}
             </select>
+            <button type="button" class="small-btn delete-btn order-delete-btn" data-id="${escapeHtml(o.id)}">🗑️ ডিলিট</button>
           </div>
 
           <input type="text" class="courier-input" data-id="${escapeHtml(o.id)}" data-field="courierNote" value="${escapeHtml(o.courierNote || '')}" placeholder="এখানে লিখুন">
@@ -168,6 +170,13 @@ function renderOrders() {
       const orderId = e.target.getAttribute('data-id');
       const newStatus = e.target.value;
       updateOrderStatus(orderId, newStatus);
+    });
+  });
+
+  // টেস্ট অর্ডার মুছে ফেলার বাটন — ক্লিক করলে আগে Yes/No কনফার্মেশন পপ-আপ দেখায়
+  document.querySelectorAll('.order-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      deleteOrder(btn.getAttribute('data-id'));
     });
   });
 
@@ -222,6 +231,23 @@ function updateOrderStatus(orderId, newStatus) {
     alert("Status আপডেট করতে সমস্যা হয়েছে।");
     console.error("Status update error:", err);
   });
+}
+
+// টেস্ট অর্ডার মুছে ফেলার জন্য — confirm() ব্রাউজারের নিজস্ব Yes/No (OK/Cancel) পপ-আপ দেখায়,
+// "Cancel" দিলে কিছুই ডিলিট হবে না
+function deleteOrder(orderId) {
+  if (!confirm("আপনি কি নিশ্চিত এই অর্ডারটি ডিলিট করতে চান? এটা আর ফেরানো যাবে না।")) return;
+  db.collection("orders").doc(orderId).delete()
+    .then(() => {
+      allOrders = allOrders.filter(o => o.id !== orderId);
+      document.getElementById('ordersCount').textContent = allOrders.length ? allOrders.length : '';
+      renderOrders();
+      updateCsvFilterCount();
+    })
+    .catch((err) => {
+      alert("অর্ডার ডিলিট করতে সমস্যা হয়েছে।");
+      console.error("Order delete error:", err);
+    });
 }
 
 
@@ -1173,13 +1199,57 @@ function todayStr() {
 }
 
 // অর্ডার — তারিখ অনুযায়ী (সবচেয়ে নতুন আগে, যেভাবে Firestore থেকে আনা হয়েছে) CSV হিসেবে ডাউনলোড
+// Date Range + Status ফিল্টার অনুযায়ী allOrders থেকে ছেঁকে বের করে —
+// createdAt (Firestore Timestamp) দিয়ে তারিখ মেলানো হয়, কারণ o.date স্ট্রিং ফরম্যাটে
+// থাকে (যেমন "২৫ সেপ্টেম্বর, ২০২৬") যেটা সরাসরি তুলনা করা যায় না
+function getFilteredOrdersForCSV() {
+  const startVal = document.getElementById('csvStartDate').value;
+  const endVal = document.getElementById('csvEndDate').value;
+  const statusVal = document.getElementById('csvStatusFilter').value;
+
+  const startDate = startVal ? new Date(startVal + 'T00:00:00') : null;
+  const endDate = endVal ? new Date(endVal + 'T23:59:59') : null;
+
+  return allOrders.filter(o => {
+    if (statusVal !== 'all' && (o.status || 'pending') !== statusVal) return false;
+
+    if (startDate || endDate) {
+      if (!o.createdAt || typeof o.createdAt.toDate !== 'function') return false;
+      const d = o.createdAt.toDate();
+      if (startDate && d < startDate) return false;
+      if (endDate && d > endDate) return false;
+    }
+
+    return true;
+  });
+}
+
+// ফিল্টার (তারিখ/স্ট্যাটাস) পাল্টালেই কতগুলো অর্ডার ডাউনলোড হবে সেটা লাইভ দেখায়,
+// যাতে ডাউনলোড বাটনে ক্লিক করার আগেই বুঝতে পারেন কী ডাউনলোড হতে যাচ্ছে
+function updateCsvFilterCount() {
+  const el = document.getElementById('csvFilterCount');
+  if (!el) return;
+  const n = getFilteredOrdersForCSV().length;
+  el.textContent = `এই ফিল্টার অনুযায়ী ${n}টি অর্ডার ডাউনলোড হবে`;
+}
+
+['csvStartDate', 'csvEndDate', 'csvStatusFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', updateCsvFilterCount);
+});
+
 function exportOrdersToCSV() {
   if (allOrders.length === 0) {
     alert("ডাউনলোড করার মতো কোনো অর্ডার নেই।");
     return;
   }
+  const filtered = getFilteredOrdersForCSV();
+  if (filtered.length === 0) {
+    alert("এই ফিল্টার অনুযায়ী কোনো অর্ডার পাওয়া যায়নি।");
+    return;
+  }
   const headers = ['Order ID', 'তারিখ', 'সময়', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'কালার/হ্যান্ডেল', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
-  const rows = allOrders.map(o => [
+  const rows = filtered.map(o => [
     o.orderId || '',
     excelSafeText(o.date || ''),
     orderTimeStr(o),

@@ -41,7 +41,21 @@
     <div class="tab-content active" id="tabContent-orders">
         <div class="card">
             <h3>📦 Customer Orders</h3>
-            <button class="small-btn" style="margin-bottom:14px;" onclick="exportOrdersToCSV()">📥 CSV ডাউনলোড করুন (ব্যাকআপ)</button>
+
+            <div class="csv-filter-row">
+                <button class="small-btn" onclick="exportOrdersToCSV()">📥 CSV ডাউনলোড করুন (ব্যাকআপ)</button>
+                <input type="date" id="csvStartDate" title="শুরুর তারিখ">
+                <input type="date" id="csvEndDate" title="শেষ তারিখ">
+                <select id="csvStatusFilter" title="স্ট্যাটাস">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="returned">Returned</option>
+                </select>
+            </div>
+            <div id="csvFilterCount" style="font-size:12px; color:#6b7690; margin-bottom:14px;"></div>
             <div id="ordersList">লোড হচ্ছে...</div>
         </div>
     </div>
