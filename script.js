@@ -370,6 +370,19 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       // orderId-কে event_id হিসেবে পাঠানো হচ্ছে — ভবিষ্যতে Conversions API (সার্ভার-সাইড)
       // যোগ হলে একই orderId মিললে Meta দুইবার একই অর্ডার কাউন্ট করবে না (deduplication)।
       if (typeof fbq === 'function') {
+        // Manual Advanced Matching: অর্ডার ফর্ম কাস্টম বানানো বলে Meta-র automatic
+        // matching ফোন নম্বরের ফিল্ড নিজে থেকে ধরতে পারছিল না (Event Match Quality কম
+        // দেখাচ্ছিল, "Advanced matching parameters: IP address, User agent" শুধু)।
+        // তাই Purchase পাঠানোর ঠিক আগে fbq('init', ...) আবার কল করে ফোন নম্বরটা পাঠিয়ে
+        // দেওয়া হচ্ছে — এটা Meta-র অফিসিয়াল manual advanced matching পদ্ধতি, পিক্সেল
+        // নিজেই SHA-256 দিয়ে হ্যাশ করে নেয় (এখানে raw নম্বর পাঠালেই চলে)। এতে নতুন করে
+        // PageView ফায়ার হয় না, কারণ PageView আলাদা করে ট্র্যাক করা হয় pixel.js-এ।
+        fbq('init', '1953763731979924', {
+          ph: lastOrder.phone,
+          fn: lastOrder.name,
+          external_id: lastOrder.orderId
+        });
+
         fbq('track', 'Purchase', {
           value: lastOrder.total,
           currency: 'BDT',
