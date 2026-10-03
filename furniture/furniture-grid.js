@@ -11,7 +11,6 @@
 const db = firebase.firestore();
 const grid = document.getElementById('postsGrid');
 const chipsWrap = document.getElementById('categoryChips');
-const searchInput = document.getElementById('productSearchInput');
 
 const SUB_CATEGORIES = [
   { key: 'all', label: 'সব' },
@@ -22,7 +21,6 @@ const SUB_CATEGORIES = [
 ];
 
 let allPosts = [];
-let searchQuery = ''; // প্রোডাক্ট নাম সার্চ বক্সের বর্তমান টেক্সট
 
 function toBanglaNumber(num) {
   const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -78,18 +76,10 @@ function renderChips(activeKey) {
 function renderGrid(activeKey) {
   renderChips(activeKey);
 
-  let filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
-
-  // সার্চ বক্সে কিছু লেখা থাকলে প্রোডাক্টের নামের সাথে মিলিয়ে আরও ছেঁকে নেয় (ক্যাটাগরি চিপের সাথেই কাজ করে)
-  const q = searchQuery.trim().toLowerCase();
-  if (q) {
-    filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(q));
-  }
+  const filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
 
   if (filtered.length === 0) {
-    grid.innerHTML = q
-      ? '<p style="grid-column:1/-1;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>'
-      : '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
+    grid.innerHTML = '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
     return;
   }
 
@@ -135,14 +125,6 @@ grid.addEventListener('click', (e) => {
     return;
   }
 });
-
-// প্রোডাক্ট নাম সার্চ বক্স — টাইপ করার সাথে সাথেই গ্রিড ফিল্টার হয়, বর্তমান ক্যাটাগরি চিপ ধরে রেখেই
-if (searchInput) {
-  searchInput.addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    renderGrid(getUrlCategory());
-  });
-}
 
 // "লিংক কপি করুন" বাটনে ক্লিক — প্রোডাক্ট ডিটেইল পেজের লিংক কপি হয়।
 // grid-এর উপর event delegation ব্যবহার করা হয়েছে, কারণ renderGrid() প্রতিবার
