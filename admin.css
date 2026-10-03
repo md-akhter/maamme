@@ -244,9 +244,11 @@
         }
 
         .order-search-input{
+            width:260px;
+            max-width:100%;
             margin:0 0 14px;
-            padding:10px 12px;
-            font-size:14px;
+            padding:8px 10px;
+            font-size:13.5px;
             border:1.5px solid var(--brass);
             border-radius:6px;
         }
