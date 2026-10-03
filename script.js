@@ -110,20 +110,23 @@ function loadProducts() {
       snapshot.forEach((doc) => {
         const p = doc.data();
 
-        // হোমপেজে একটা প্রোডাক্ট দেখানো হয় দুই শর্তের যেকোনো একটায়:
+        // dropdown-এ (অর্ডার ফর্মে "চেয়ার বাছুন") সবসময় ক্যাটাগরি নির্বিশেষে *সব* প্রোডাক্ট
+        // যোগ হয় — কারণ furniture/fashion পেজের "অর্ডার করুন" বাটন থেকে যেকোনো প্রোডাক্ট
+        // এখানে এসে অটো-সিলেক্ট হতে পারে, সেটা হোমপেজের গ্রিডে দেখানো হোক বা না হোক।
+        const priceFormatted = Number(p.price).toLocaleString('en-IN');
+        optionsHtml += `<option data-price="${p.price}" data-slug="${p.slug}">${p.fullName} — ৳${priceFormatted}</option>`;
+
+        // হোমপেজের গ্রিডে কার্ড হিসেবে দেখানো হয় শুধু দুই শর্তের যেকোনো একটায়:
         // ১) Category = "Home" (এটাই তার স্থায়ী জায়গা), অথবা
         // ২) Category Furniture/Fashion হলেও "Show on Homepage" টগল ON করা আছে —
         //    তখন সে তার নিজের Category পেজে থাকার পাশাপাশি Homepage-এও দেখাবে।
-        // Category আর Homepage Display সম্পূর্ণ আলাদা সেটিং, একটা আরেকটাকে বদলায় না।
+        // এটা শুধু গ্রিড-ডিসপ্লের শর্ত — dropdown-এর সাথে এর সম্পর্ক নেই।
         // পুরনো প্রোডাক্ট (dropdown যোগ হওয়ার আগে তৈরি, category field নেই) ব্যাকওয়ার্ড-
         // কম্প্যাটিবিলিটির জন্য Home হিসেবেই ধরা হচ্ছে।
         const isHomeCategory = !p.category || p.category === 'Home';
-        if (!isHomeCategory && !p.showOnHomepage) return;
-
-        allHomeProducts.push(p);
-
-        const priceFormatted = Number(p.price).toLocaleString('en-IN');
-        optionsHtml += `<option data-price="${p.price}" data-slug="${p.slug}">${p.fullName} — ৳${priceFormatted}</option>`;
+        if (isHomeCategory || p.showOnHomepage) {
+          allHomeProducts.push(p);
+        }
       });
 
       // dropdown-এ "কাস্টম অর্ডার" এর ঠিক আগে প্রোডাক্টগুলো বসানো হচ্ছে
