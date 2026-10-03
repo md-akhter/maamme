@@ -22,14 +22,26 @@
   .listing-head p{font-size:16px; line-height:1.7; color:#3d4a63;}
 
   /* এই পেজের নিজস্ব সার্চ বক্স — এখানে থেকে ফলাফল আবার নতুন করে খোঁজা যায় (q পাল্টে একই পেজ রিলোড হয়) */
-  .page-search-form{display:block; margin-bottom:30px;}
+  .page-search-form{display:flex; gap:8px; margin-bottom:30px; max-width:420px;}
   .page-search-input{
-    display:block; width:100%; max-width:420px;
+    flex:1; min-width:0;
     padding:12px 16px; font-size:15px;
     font-family:'Hind Siliguri',sans-serif;
     border:1.5px solid var(--line); border-radius:8px; background:#fff;
   }
   .page-search-input:focus{outline:none; border-color:var(--brass);}
+  .page-search-btn{
+    width:auto; margin:0; padding:0 20px;
+    background:var(--brass); color:var(--walnut-950); border:none; border-radius:8px;
+    font-size:14px; font-weight:600; font-family:'Hind Siliguri',sans-serif;
+    cursor:pointer; white-space:nowrap;
+  }
+  .page-search-btn:hover{background:var(--brass-bright);}
+
+  @media (max-width:560px){
+    .page-search-form{flex-direction:column; max-width:100%;}
+    .page-search-btn{width:100%; padding:12px;}
+  }
 
   .product-grid-full{
     display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:22px;
@@ -70,7 +82,8 @@
       <li><a href="about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
     <form class="nav-search" action="search.html" method="GET" role="search">
-      <input type="text" name="q" class="nav-search-input" placeholder="🔍 প্রোডাক্ট খুঁজুন" autocomplete="off">
+      <input type="text" name="q" class="nav-search-input" placeholder="প্রোডাক্ট খুঁজুন" autocomplete="off">
+      <button type="submit" class="nav-search-btn" aria-label="সার্চ করুন">🔍</button>
     </form>
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
@@ -121,7 +134,8 @@
     </div>
 
     <form class="page-search-form" action="search.html" method="GET" role="search">
-      <input type="text" name="q" id="pageSearchInput" class="page-search-input" placeholder="🔍 প্রোডাক্টের নাম দিয়ে খুঁজুন" autocomplete="off">
+      <input type="text" name="q" id="pageSearchInput" class="page-search-input" placeholder="প্রোডাক্টের নাম দিয়ে খুঁজুন" autocomplete="off">
+      <button type="submit" class="page-search-btn" aria-label="সার্চ করুন">🔍 খুঁজুন</button>
     </form>
 
     <!-- প্রোডাক্ট কার্ডগুলো সবগুলো ক্যাটাগরি (Home/Furniture/Fashion) জুড়ে Firestore থেকে
