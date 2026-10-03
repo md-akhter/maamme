@@ -27,6 +27,24 @@
   .listing-head h1{font-size:clamp(28px,4vw,40px); font-weight:500; margin:14px 0 12px; line-height:1.15;}
   .listing-head p{font-size:16px; line-height:1.7; color:#3d4a63;}
 
+  /* প্রোডাক্ট নাম সার্চ বক্স */
+  .product-search-input{
+    display:block;
+    width:320px;
+    max-width:100%;
+    padding:10px 14px;
+    margin-bottom:16px;
+    font-size:14px;
+    font-family:'Hind Siliguri',sans-serif;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    background:#fff;
+  }
+  .product-search-input:focus{
+    outline:none;
+    border-color:var(--brass);
+  }
+
   /* সাব-ক্যাটাগরি ফিল্টার চিপ — স্টিল চেয়ার/অফিস চেয়ার/ডাইনিং চেয়ার/ফোল্ডেবল বেড */
   .category-chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:30px;}
   .cat-chip{
@@ -94,6 +112,9 @@
       <h1>ফার্নিচার — স্টিল চেয়ার, অফিস চেয়ার, ডাইনিং চেয়ার ও আরও</h1>
       <p>মজবুত স্টিল ফ্রেমে তৈরি আমাদের সম্পূর্ণ ফার্নিচার সংগ্রহ থেকে পছন্দের ক্যাটাগরি বেছে নিন।</p>
     </div>
+
+    <!-- প্রোডাক্ট নাম দিয়ে সার্চ — furniture-grid.js দিয়ে ডাইনামিকভাবে ফিল্টার হয়, ক্যাটাগরি চিপের সাথে একসাথে কাজ করে -->
+    <input type="text" id="productSearchInput" class="product-search-input" placeholder="🔍 প্রোডাক্টের নাম দিয়ে খুঁজুন">
 
     <!-- সাব-ক্যাটাগরি ফিল্টার — furniture-grid.js দিয়ে ডাইনামিকভাবে বসে (URL-এর ?cat= অনুযায়ী active) -->
     <div class="category-chips" id="categoryChips"></div>
