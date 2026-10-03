@@ -243,6 +243,19 @@
             border-radius:5px;
         }
 
+        .order-search-input{
+            margin:0 0 14px;
+            padding:10px 12px;
+            font-size:14px;
+            border:1.5px solid var(--brass);
+            border-radius:6px;
+        }
+
+        .order-search-input:focus{
+            outline:none;
+            border-color:var(--walnut-950);
+        }
+
         .status-row{
             margin-top:8px;
             display:flex;

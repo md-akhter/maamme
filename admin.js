@@ -72,6 +72,7 @@ const ORDER_STATUSES = [
 
 let allOrders = [];      // সব অর্ডার এখানে ক্যাশ থাকে — বারবার Firestore থেকে না এনে filter/count করা যায়
 let currentFilter = 'all';
+let orderSearchQuery = ''; // ফোন নম্বর/অর্ডার আইডি সার্চ বক্সের বর্তমান টেক্সট
 
 function loadOrders() {
   const list = document.getElementById("ordersList");
@@ -118,11 +119,27 @@ function renderOrders() {
   });
   statsHtml += '</div>';
 
-  const filtered = currentFilter === 'all' ? allOrders : allOrders.filter(o => (o.status || 'pending') === currentFilter);
+  // সার্চ বক্সে কিছু লেখা থাকলে — ফোন নম্বর বা অর্ডার আইডি দিয়ে সব স্ট্যাটাস জুড়ে খোঁজা হয়
+  // (স্ট্যাটাস চিপ তখন উপেক্ষা করা হয়, কারণ ইউজার তো জানেই না অর্ডারটা এখন কোন স্ট্যাটাসে আছে)
+  const searchQ = orderSearchQuery.trim().toLowerCase();
+  let filtered;
+  if (searchQ) {
+    const queryDigits = searchQ.replace(/\D/g, '');
+    filtered = allOrders.filter(o => {
+      const idMatch = (o.orderId || '').toLowerCase().includes(searchQ);
+      const phoneDigits = (o.phone || '').replace(/\D/g, '');
+      const phoneMatch = queryDigits && phoneDigits.includes(queryDigits);
+      return idMatch || phoneMatch;
+    });
+  } else {
+    filtered = currentFilter === 'all' ? allOrders : allOrders.filter(o => (o.status || 'pending') === currentFilter);
+  }
 
   let itemsHtml = '';
   if (filtered.length === 0) {
-    itemsHtml = '<p style="padding:10px 0;">এই স্ট্যাটাসে কোনো অর্ডার নেই।</p>';
+    itemsHtml = searchQ
+      ? '<p style="padding:10px 0;">এই নম্বর/আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি।</p>'
+      : '<p style="padding:10px 0;">এই স্ট্যাটাসে কোনো অর্ডার নেই।</p>';
   } else {
     filtered.forEach((o) => {
       const total = o.total ? Number(o.total).toLocaleString('en-IN') : '—';
@@ -161,6 +178,11 @@ function renderOrders() {
   document.querySelectorAll('.stat-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       currentFilter = chip.getAttribute('data-key');
+      // স্ট্যাটাস চিপে ক্লিক করলে সার্চ বক্স খালি করে দেওয়া হয়, নাহলে সার্চ রেজাল্টের
+      // উপর চিপ ক্লিক করলে কিছুই পাল্টাচ্ছে না মনে হতো (কারণ সার্চ সব সময় চিপের উপর অগ্রাধিকার পায়)
+      orderSearchQuery = '';
+      const searchInput = document.getElementById('orderSearchInput');
+      if (searchInput) searchInput.value = '';
       renderOrders();
     });
   });
@@ -1237,6 +1259,15 @@ function updateCsvFilterCount() {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', updateCsvFilterCount);
 });
+
+// ফোন নম্বর/অর্ডার আইডি সার্চ বক্স — টাইপ করার সাথে সাথেই লিস্ট ফিল্টার হয়ে যায়
+const orderSearchInput = document.getElementById('orderSearchInput');
+if (orderSearchInput) {
+  orderSearchInput.addEventListener('input', (e) => {
+    orderSearchQuery = e.target.value;
+    renderOrders();
+  });
+}
 
 function exportOrdersToCSV() {
   if (allOrders.length === 0) {
