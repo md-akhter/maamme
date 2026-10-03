@@ -73,6 +73,17 @@
     background:var(--brass); transition:width .3s ease;
   }
   .nav-links a:hover::after{width:100%;}
+
+  /* মেনু বারের সার্চ বক্স — টাইপ করে Enter চাপলে search.html?q=... পেজে নিয়ে যায় (সাইটের সব প্রোডাক্ট জুড়ে খোঁজে) */
+  .nav-search{display:flex; align-items:center; margin:0 10px;}
+  .nav-search-input{
+    width:190px; padding:8px 14px; font-size:13.5px;
+    font-family:'Hind Siliguri',sans-serif;
+    border:1px solid var(--line); border-radius:20px; background:#fff;
+    color:var(--text-dark);
+  }
+  .nav-search-input:focus{outline:none; border-color:var(--brass);}
+
   .nav-actions{display:flex; align-items:center; gap:10px;}
   .nav-cta{
     background:var(--walnut-950); color:var(--text-light);
@@ -229,26 +240,6 @@
   .products{background:var(--walnut-950); color:var(--text-light); padding-top:60px;}
   .products .sec-head p{color:rgba(245,247,251,0.72);}
   .products .eyebrow{color:var(--brass-bright);}
-  .product-search-input{
-    display:block;
-    width:320px;
-    max-width:100%;
-    padding:10px 14px;
-    margin-bottom:26px;
-    font-size:14px;
-    font-family:'Hind Siliguri',sans-serif;
-    border:1.5px solid rgba(245,247,251,0.25);
-    border-radius:8px;
-    background:rgba(245,247,251,0.06);
-    color:var(--text-light);
-  }
-  .product-search-input::placeholder{color:rgba(245,247,251,0.55);}
-  .product-search-input:focus{
-    outline:none;
-    border-color:var(--brass-bright);
-    background:rgba(245,247,251,0.1);
-  }
-
   .grid-products{
     display:grid; grid-template-columns:repeat(4,1fr); gap:22px;
   }
@@ -406,6 +397,11 @@
     .order-grid{grid-template-columns:1fr;}
     .grid-products{grid-template-columns:repeat(2,1fr);}
     .steps{grid-template-columns:1fr 1fr;}
+
+    /* নেভবারে জায়গা কম থাকায় সার্চ বক্সকে নিজের আলাদা সম্পূর্ণ লাইনে (লোগো/মেনু বাটনের নিচে) নামিয়ে আনা হচ্ছে */
+    .nav{flex-wrap:wrap; row-gap:10px;}
+    .nav-search{order:10; width:100%; margin:0;}
+    .nav-search-input{width:100%;}
   }
   @media (max-width:560px){
     .grid-products{grid-template-columns:repeat(2,1fr); gap:10px;}

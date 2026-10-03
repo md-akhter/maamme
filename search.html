@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>প্রোডাক্ট সার্চ | Maamme.com</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://maamme.com/search.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="style.css?v=6">
+<style>
+  /* এই পেজের জন্য কিছু addition — বাকি সব style.css থেকে আসছে (furniture/fashion listing পেজের প্যাটার্নেই) */
+  .listing-section{padding:44px 0 64px;}
+  .breadcrumb{font-size:13px; color:#6b7690; margin-bottom:18px;}
+  .breadcrumb a{color:var(--brass); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .listing-head{max-width:680px; margin-bottom:26px;}
+  .listing-head h1{font-size:clamp(26px,4vw,36px); font-weight:500; margin:14px 0 12px; line-height:1.15;}
+  .listing-head p{font-size:16px; line-height:1.7; color:#3d4a63;}
+
+  /* এই পেজের নিজস্ব সার্চ বক্স — এখানে থেকে ফলাফল আবার নতুন করে খোঁজা যায় (q পাল্টে একই পেজ রিলোড হয়) */
+  .page-search-form{display:block; margin-bottom:30px;}
+  .page-search-input{
+    display:block; width:100%; max-width:420px;
+    padding:12px 16px; font-size:15px;
+    font-family:'Hind Siliguri',sans-serif;
+    border:1.5px solid var(--line); border-radius:8px; background:#fff;
+  }
+  .page-search-input:focus{outline:none; border-color:var(--brass);}
+
+  .product-grid-full{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:22px;
+  }
+
+  @media (max-width:560px){
+    .wrap{padding:0 10px;}
+    .listing-section{padding:26px 0 40px;}
+    .product-grid-full{grid-template-columns:repeat(2,1fr); gap:12px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo"><a href="/"><img src="images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
+    <ul class="nav-links">
+      <li><a href="/">হোম</a></li>
+      <li class="has-dropdown">
+        <a href="furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="furniture/index.html?cat=office-chair">অফিস চেয়ার</a></li>
+          <li><a href="furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="fashion/index.html?cat=one-piece">ওয়ান পিস</a></li>
+          <li><a href="fashion/index.html?cat=two-piece">টু পিস</a></li>
+          <li><a href="fashion/index.html?cat=three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
+      <li><a href="products/index.html">প্রোডাক্ট_পোস্ট</a></li>
+      <li><a href="about-us.html">আমাদের সম্পর্কে</a></li>
+    </ul>
+    <form class="nav-search" action="search.html" method="GET" role="search">
+      <input type="text" name="q" class="nav-search-input" placeholder="🔍 প্রোডাক্ট খুঁজুন" autocomplete="off">
+    </form>
+    <div class="nav-actions" id="navActions">
+      <div class="mobile-nav-links">
+        <a href="/">হোম</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a>
+            <a href="furniture/index.html?cat=office-chair">অফিস চেয়ার</a>
+            <a href="furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a>
+            <a href="furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="fashion/index.html?cat=one-piece">ওয়ান পিস</a>
+            <a href="fashion/index.html?cat=two-piece">টু পিস</a>
+            <a href="fashion/index.html?cat=three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
+        <a href="products/index.html">প্রোডাক্ট</a>
+        <a href="about-us.html">আমাদের সম্পর্কে</a>
+      </div>
+      <a href="track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
+      <a href="#order" class="nav-cta">অর্ডার করুন</a>
+    </div>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="মেনু" aria-haspopup="true" aria-expanded="false">☰</button>
+  </div>
+</header>
+
+<section class="listing-section">
+  <div class="wrap">
+
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href="/">Home</a> &raquo; <span>সার্চ ফলাফল</span>
+    </nav>
+
+    <div class="listing-head">
+      <div class="eyebrow">সার্চ ফলাফল</div>
+      <h1 id="searchHeading">প্রোডাক্ট খুঁজুন</h1>
+      <p id="searchSubtext">নাম লিখে Maamme.com-এর সবগুলো প্রোডাক্ট (ফার্নিচার, ফ্যাশন — সব ক্যাটাগরি) জুড়ে একসাথে খুঁজুন।</p>
+    </div>
+
+    <form class="page-search-form" action="search.html" method="GET" role="search">
+      <input type="text" name="q" id="pageSearchInput" class="page-search-input" placeholder="🔍 প্রোডাক্টের নাম দিয়ে খুঁজুন" autocomplete="off">
+    </form>
+
+    <!-- প্রোডাক্ট কার্ডগুলো সবগুলো ক্যাটাগরি (Home/Furniture/Fashion) জুড়ে Firestore থেকে
+         search-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয়, URL-এর ?q= অনুযায়ী ফিল্টার করে -->
+    <div class="product-grid-full" id="postsGrid">
+      <p style="grid-column:1/-1; color:#6b7690;">লোড হচ্ছে...</p>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">MAAMME.COM</div>
+      <ul class="foot-links">
+        <li><a href="/#products">সংগ্রহ</a></li>
+        <li><a href="/#about">কারুকাজ</a></li>
+        <li><a href="/#process">প্রক্রিয়া</a></li>
+        <li><a href="/#order">অর্ডার</a></li>
+        <li><a href="track.html">অর্ডার ট্র্যাক করুন</a></li>
+        <li><a href="complain.html">অভিযোগ জানান</a></li>
+        <li><a href="https://www.facebook.com/maammebd/" target="_blank" rel="noopener">ফেসবুক পেজ</a></li>
+      </ul>
+    </div>
+    <div class="foot-bottom">
+      <span>© ২০২৬ MAAMME.COM — হস্তনির্মিত চেয়ার। সর্বস্বত্ব সংরক্ষিত।</span>
+      <span>ঢাকা, বাংলাদেশ</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const navActionsMenu = document.getElementById('navActions');
+
+  function toggleMobileMenu() {
+    if (!navActionsMenu) return;
+    const isOpen = navActionsMenu.classList.toggle('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  function closeMobileMenu() {
+    if (!navActionsMenu) return;
+    navActionsMenu.classList.remove('open');
+    if (mobileMenuToggle) mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (navActionsMenu) {
+    navActionsMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', closeMobileMenu);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!navActionsMenu || !navActionsMenu.classList.contains('open')) return;
+    if (navActionsMenu.contains(e.target) || (mobileMenuToggle && mobileMenuToggle.contains(e.target))) return;
+    closeMobileMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 560) closeMobileMenu();
+  });
+
+  function toggleMobileSubmenu(btn) {
+    const group = btn.closest('.mobile-nav-group');
+    if (group) group.classList.toggle('open');
+  }
+</script>
+
+<!-- Firebase SDK — products কালেকশন থেকে সব ক্যাটাগরি জুড়ে সার্চ করার জন্য -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-init.js"></script>
+<script src="search-grid.js"></script>
+
+</body>
+</html>

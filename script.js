@@ -5,10 +5,8 @@
 const productSelect = document.getElementById('product');
 const qtyInput = document.getElementById('qty');
 const productsGrid = document.getElementById('productsGrid');
-const productSearchInput = document.getElementById('productSearchInput');
 
-let allHomeProducts = [];   // হোমপেজে দেখানোর মতো প্রোডাক্টগুলো এখানে ক্যাশ থাকে, সার্চের সময় আবার Firestore থেকে আনতে হয় না
-let homeSearchQuery = '';   // প্রোডাক্ট নাম সার্চ বক্সের বর্তমান টেক্সট
+let allHomeProducts = [];   // হোমপেজে দেখানোর মতো প্রোডাক্টগুলো এখানে ক্যাশ থাকে
 
 // একটা generic fallback আইকন — ছবি লোড না হলে সবার জন্য একই আইকন দেখাবে
 const FALLBACK_SVG = `
@@ -85,23 +83,15 @@ function buildProductCardHtml(p) {
     </div>`;
 }
 
-// allHomeProducts থেকে বর্তমান সার্চ টেক্সট অনুযায়ী ছেঁকে গ্রিড (re-)রেন্ডার করে।
-// প্রথম লোডের সময়ও (খালি সার্চ দিয়ে) আর সার্চ বক্সে টাইপ করার সময়ও — দুই জায়গাতেই ব্যবহার হয়।
+// allHomeProducts থেকে গ্রিড রেন্ডার করে — কার্ড-বিল্ডিং কোড আলাদা ফাংশনে থাকায় পুনরায় ব্যবহার সহজ
 function renderProductsGrid() {
-  const q = homeSearchQuery.trim().toLowerCase();
-  const filtered = q
-    ? allHomeProducts.filter(p => (p.name || '').toLowerCase().includes(q))
-    : allHomeProducts;
-
-  if (filtered.length === 0) {
-    productsGrid.innerHTML = q
-      ? '<p style="padding:20px; opacity:.7;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>'
-      : '<p style="padding:20px; opacity:.7;">এখনো কোনো প্রোডাক্ট যোগ করা হয়নি।</p>';
+  if (allHomeProducts.length === 0) {
+    productsGrid.innerHTML = '<p style="padding:20px; opacity:.7;">এখনো কোনো প্রোডাক্ট যোগ করা হয়নি।</p>';
     return;
   }
 
-  productsGrid.innerHTML = filtered.map(buildProductCardHtml).join('');
-  initProductInteractions(); // প্রতিবার innerHTML বদলানোর পর নতুন বাটনগুলোতে আবার ইভেন্ট বসাতে হয়
+  productsGrid.innerHTML = allHomeProducts.map(buildProductCardHtml).join('');
+  initProductInteractions();
 }
 
 function loadProducts() {
@@ -159,14 +149,6 @@ function loadProducts() {
       if (location.hash) {
         const target = document.querySelector(location.hash);
         if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
-      }
-
-      // প্রোডাক্ট নাম সার্চ বক্স — টাইপ করার সাথে সাথেই গ্রিড ফিল্টার হয় (একবারই বসানো হচ্ছে)
-      if (productSearchInput) {
-        productSearchInput.addEventListener('input', (e) => {
-          homeSearchQuery = e.target.value;
-          renderProductsGrid();
-        });
       }
     })
     .catch((err) => {
