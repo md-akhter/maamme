@@ -11,6 +11,7 @@
 const db = firebase.firestore();
 const grid = document.getElementById('postsGrid');
 const chipsWrap = document.getElementById('categoryChips');
+const searchInput = document.getElementById('productSearchInput');
 
 const SUB_CATEGORIES = [
   { key: 'all', label: 'সব' },
@@ -20,6 +21,7 @@ const SUB_CATEGORIES = [
 ];
 
 let allPosts = [];
+let searchQuery = ''; // প্রোডাক্ট নাম সার্চ বক্সের বর্তমান টেক্সট
 
 function toBanglaNumber(num) {
   const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -41,6 +43,12 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// অ্যাডমিনে বিবরণ একাধিক লাইনে (বুলেট আকারে) লেখা যায় — escape করার পর \n কে <br> এ
+// বদলে দেয় যাতে কার্ডেও প্রতিটা লাইন আলাদা করে দেখায় (home পেজের script.js-এর মতোই)
+function formatDescription(text) {
+  return escapeHtml(text).replace(/\n/g, '<br>');
 }
 
 function getUrlCategory() {
@@ -69,10 +77,18 @@ function renderChips(activeKey) {
 function renderGrid(activeKey) {
   renderChips(activeKey);
 
-  const filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
+  let filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
+
+  // সার্চ বক্সে কিছু লেখা থাকলে প্রোডাক্টের নামের সাথে মিলিয়ে আরও ছেঁকে নেয় (ক্যাটাগরি চিপের সাথেই কাজ করে)
+  const q = searchQuery.trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(q));
+  }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
+    grid.innerHTML = q
+      ? '<p style="grid-column:1/-1;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>'
+      : '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
     return;
   }
 
@@ -97,6 +113,14 @@ function renderGrid(activeKey) {
       </div>`;
   });
   grid.innerHTML = html;
+}
+
+// প্রোডাক্ট নাম সার্চ বক্স — টাইপ করার সাথে সাথেই গ্রিড ফিল্টার হয়, বর্তমান ক্যাটাগরি চিপ ধরে রেখেই
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderGrid(getUrlCategory());
+  });
 }
 
 // "লিংক কপি করুন" বাটনে ক্লিক — প্রোডাক্ট ডিটেইল পেজের লিংক কপি হয়।
