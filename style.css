@@ -229,6 +229,26 @@
   .products{background:var(--walnut-950); color:var(--text-light); padding-top:60px;}
   .products .sec-head p{color:rgba(245,247,251,0.72);}
   .products .eyebrow{color:var(--brass-bright);}
+  .product-search-input{
+    display:block;
+    width:320px;
+    max-width:100%;
+    padding:10px 14px;
+    margin-bottom:26px;
+    font-size:14px;
+    font-family:'Hind Siliguri',sans-serif;
+    border:1.5px solid rgba(245,247,251,0.25);
+    border-radius:8px;
+    background:rgba(245,247,251,0.06);
+    color:var(--text-light);
+  }
+  .product-search-input::placeholder{color:rgba(245,247,251,0.55);}
+  .product-search-input:focus{
+    outline:none;
+    border-color:var(--brass-bright);
+    background:rgba(245,247,251,0.1);
+  }
+
   .grid-products{
     display:grid; grid-template-columns:repeat(4,1fr); gap:22px;
   }

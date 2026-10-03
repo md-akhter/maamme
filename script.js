@@ -5,6 +5,10 @@
 const productSelect = document.getElementById('product');
 const qtyInput = document.getElementById('qty');
 const productsGrid = document.getElementById('productsGrid');
+const productSearchInput = document.getElementById('productSearchInput');
+
+let allHomeProducts = [];   // হোমপেজে দেখানোর মতো প্রোডাক্টগুলো এখানে ক্যাশ থাকে, সার্চের সময় আবার Firestore থেকে আনতে হয় না
+let homeSearchQuery = '';   // প্রোডাক্ট নাম সার্চ বক্সের বর্তমান টেক্সট
 
 // একটা generic fallback আইকন — ছবি লোড না হলে সবার জন্য একই আইকন দেখাবে
 const FALLBACK_SVG = `
@@ -54,6 +58,52 @@ function formatBengaliDate(date) {
   return toBengaliDigits(day) + ' ' + BN_MONTHS[month - 1] + ', ' + toBengaliDigits(year);
 }
 
+// একটা প্রোডাক্ট অবজেক্ট থেকে কার্ডের HTML বানায় — loadProducts() ও renderProductsGrid()
+// দুই জায়গাতেই (প্রথম লোড ও সার্চের পর রি-রেন্ডারে) একই ফাংশন ব্যবহার হয়
+function buildProductCardHtml(p) {
+  const priceFormatted = Number(p.price).toLocaleString('en-IN');
+  return `
+    <div class="card reveal in" id="${p.slug}" data-product="${p.fullName}">
+      <div class="card-art">
+        <img class="card-photo" src="${p.image}" alt="${p.fullName}" onerror="this.style.display='none';">
+        <div class="card-fallback">${FALLBACK_SVG}</div>
+      </div>
+      <div class="card-body">
+        <div class="tag">${p.tag || ''}</div>
+        <h3>${p.name}</h3>
+        <div class="details-price-row">
+          <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
+          <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
+        </div>
+        <p>${formatDescription(p.description)}</p>
+        <div class="card-foot">
+          <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
+          <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}" data-slug="${p.slug}">অর্ডার করুন</button>
+        </div>
+        <button class="copy-link-btn" type="button" data-slug="${p.slug}">🔗 লিংক কপি করুন</button>
+      </div>
+    </div>`;
+}
+
+// allHomeProducts থেকে বর্তমান সার্চ টেক্সট অনুযায়ী ছেঁকে গ্রিড (re-)রেন্ডার করে।
+// প্রথম লোডের সময়ও (খালি সার্চ দিয়ে) আর সার্চ বক্সে টাইপ করার সময়ও — দুই জায়গাতেই ব্যবহার হয়।
+function renderProductsGrid() {
+  const q = homeSearchQuery.trim().toLowerCase();
+  const filtered = q
+    ? allHomeProducts.filter(p => (p.name || '').toLowerCase().includes(q))
+    : allHomeProducts;
+
+  if (filtered.length === 0) {
+    productsGrid.innerHTML = q
+      ? '<p style="padding:20px; opacity:.7;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>'
+      : '<p style="padding:20px; opacity:.7;">এখনো কোনো প্রোডাক্ট যোগ করা হয়নি।</p>';
+    return;
+  }
+
+  productsGrid.innerHTML = filtered.map(buildProductCardHtml).join('');
+  initProductInteractions(); // প্রতিবার innerHTML বদলানোর পর নতুন বাটনগুলোতে আবার ইভেন্ট বসাতে হয়
+}
+
 function loadProducts() {
   if (!window.firebase || !firebase.firestore) return;
 
@@ -64,7 +114,7 @@ function loadProducts() {
         return;
       }
 
-      let gridHtml = '';
+      allHomeProducts = [];
       let optionsHtml = '';
 
       snapshot.forEach((doc) => {
@@ -80,40 +130,17 @@ function loadProducts() {
         const isHomeCategory = !p.category || p.category === 'Home';
         if (!isHomeCategory && !p.showOnHomepage) return;
 
+        allHomeProducts.push(p);
+
         const priceFormatted = Number(p.price).toLocaleString('en-IN');
-
-        gridHtml += `
-          <div class="card reveal in" id="${p.slug}" data-product="${p.fullName}">
-            <div class="card-art">
-              <img class="card-photo" src="${p.image}" alt="${p.fullName}" onerror="this.style.display='none';">
-              <div class="card-fallback">${FALLBACK_SVG}</div>
-            </div>
-            <div class="card-body">
-              <div class="tag">${p.tag || ''}</div>
-              <h3>${p.name}</h3>
-              <div class="details-price-row">
-                <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
-                <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
-              </div>
-              <p>${formatDescription(p.description)}</p>
-              <div class="card-foot">
-                <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
-                <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}" data-slug="${p.slug}">অর্ডার করুন</button>
-              </div>
-              <button class="copy-link-btn" type="button" data-slug="${p.slug}">🔗 লিংক কপি করুন</button>
-            </div>
-          </div>`;
-
         optionsHtml += `<option data-price="${p.price}" data-slug="${p.slug}">${p.fullName} — ৳${priceFormatted}</option>`;
       });
-
-      productsGrid.innerHTML = gridHtml;
 
       // dropdown-এ "কাস্টম অর্ডার" এর ঠিক আগে প্রোডাক্টগুলো বসানো হচ্ছে
       const customOption = productSelect.querySelector('option[data-price="0"]');
       customOption.insertAdjacentHTML('beforebegin', optionsHtml);
 
-      initProductInteractions();
+      renderProductsGrid();
 
       // furniture/fashion পেজের "অর্ডার করুন" বাটন থেকে "/?product=slug#order" ফরম্যাটে আসলে,
       // সেই স্লাগ মিলিয়ে dropdown-এ প্রোডাক্টটা অটো-সিলেক্ট করা ও কার্ড হাইলাইট করা হয়
@@ -132,6 +159,14 @@ function loadProducts() {
       if (location.hash) {
         const target = document.querySelector(location.hash);
         if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+      }
+
+      // প্রোডাক্ট নাম সার্চ বক্স — টাইপ করার সাথে সাথেই গ্রিড ফিল্টার হয় (একবারই বসানো হচ্ছে)
+      if (productSearchInput) {
+        productSearchInput.addEventListener('input', (e) => {
+          homeSearchQuery = e.target.value;
+          renderProductsGrid();
+        });
       }
     })
     .catch((err) => {
@@ -191,8 +226,6 @@ function initProductInteractions() {
       document.getElementById('order').scrollIntoView({ behavior: 'smooth' });
     });
   });
-
-  productSelect.addEventListener('change', updateTotal);
 }
 
 // Live total price = unit price × quantity
@@ -213,6 +246,7 @@ function updateTotal() {
   }
 }
 qtyInput.addEventListener('input', updateTotal);
+productSelect.addEventListener('change', updateTotal); // এখানে একবারই বসানো হলো — initProductInteractions() সার্চের পর বারবার চললেও এই লিসেনার ডুপ্লিকেট হবে না
 
 // প্রথমবার পেজ লোড হওয়ার সাথে সাথে প্রোডাক্ট আনা শুরু হয়
 loadProducts();
