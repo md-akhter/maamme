@@ -52,13 +52,56 @@
     <div class="logo"><a href="/"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
     <ul class="nav-links">
       <li><a href="/">হোম</a></li>
+      <li class="has-dropdown">
+        <a href="../furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="../fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a></li>
+          <li><a href="../fashion/index.html?cat=two-piece">টু পিস</a></li>
+          <li><a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
       <li><a href="index.html">প্রোডাক্ট_পোস্ট</a></li>
       <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
+    <form class="nav-search" action="../search.html" method="GET" role="search">
+      <input type="text" name="q" class="nav-search-input" placeholder="প্রোডাক্ট খুঁজুন" autocomplete="off">
+      <button type="submit" class="nav-search-btn" aria-label="সার্চ করুন">🔍</button>
+    </form>
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
         <a href="/">হোম</a>
-        <a href="index.html">প্রোডাক্ট_পোস্ট</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a>
+            <a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a>
+            <a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a>
+            <a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a>
+            <a href="../fashion/index.html?cat=two-piece">টু পিস</a>
+            <a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
+        <a href="index.html">প্রোডাক্ট</a>
         <a href="../about-us.html">আমাদের সম্পর্কে</a>
       </div>
       <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
@@ -84,7 +127,7 @@
     <!-- প্রোডাক্ট কার্ডগুলো এখন এডমিন প্যানেলের "পোস্ট" ট্যাব থেকে ম্যানেজ করা Firestore
          posts কালেকশন থেকে posts-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় -->
     <div class="product-grid-full" id="postsGrid">
-      <p style="grid-column:1/-1; color:rgba(255,255,255,0.7);">লোড হচ্ছে...</p>
+      <p style="grid-column:1/-1; color:#6b7690;">লোড হচ্ছে...</p>
     </div>
 
   </div>
@@ -101,7 +144,7 @@
         <li><a href="/#order">অর্ডার</a></li>
         <li><a href="../track.html">অর্ডার ট্র্যাক করুন</a></li>
         <li><a href="../complain.html">অভিযোগ জানান</a></li>
-        <li><a href="https://www.facebook.com/mayarghorbd/" target="_blank" rel="noopener">ফেসবুক পেজ</a></li>
+        <li><a href="https://www.facebook.com/maammebd/" target="_blank" rel="noopener">ফেসবুক পেজ</a></li>
       </ul>
     </div>
     <div class="foot-bottom">
@@ -143,6 +186,11 @@
   window.addEventListener('resize', () => {
     if (window.innerWidth > 560) closeMobileMenu();
   });
+
+  function toggleMobileSubmenu(btn) {
+    const group = btn.closest('.mobile-nav-group');
+    if (group) group.classList.toggle('open');
+  }
 </script>
 
 <!-- Firebase SDK — posts কালেকশন থেকে প্রোডাক্ট গ্রিড লোড করার জন্য -->
