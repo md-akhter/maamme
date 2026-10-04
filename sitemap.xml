@@ -31,7 +31,6 @@
     <priority>0.9</priority>
   </url>
 
-
   <url>
     <loc>https://maamme.com/products/kaunter-chair-kalo.html</loc>
     <changefreq>monthly</changefreq>
@@ -45,25 +44,44 @@
   </url>
 
   <url>
-    <loc>https://maamme.com/products/kaunter-chair-coffee.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
     <loc>https://maamme.com/products/kaunter-chair-golapi.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://maamme.com/products/kaunter-chair-green.html</loc>
+    <loc>https://maamme.com/products/kaunter-chair-coffee.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maamme.com/products/armless-counter-chair-black.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maamme.com/products/arms-counter-chair-black.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maamme.com/products/counter-chair-green.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://maamme.com/products/tulip-chair-green.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!--
-    নতুন প্রোডাক্ট পেজ বানানোর পর এখানে এভাবে একটা নতুন <url> ব্লক যোগ করুন:
+    নতুন প্রোডাক্ট পেজ বানানোর পর এখানে এভাবে একটা নতুন <url> ব্লক যোগ করুন
+    (ফাইলের নাম ঠিক যেমন আপলোড করেছেন, ছোট হাতের অক্ষরে — Vercel-এ বড়/ছোট হাতের অক্ষর আলাদা ধরা হয়):
 
     <url>
       <loc>https://maamme.com/products/নতুন-প্রোডাক্ট-slug.html</loc>
