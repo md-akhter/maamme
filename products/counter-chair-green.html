@@ -84,7 +84,7 @@
     "@type": "Offer",
     "url": "https://maamme.com/products/counter-chair-green.html",
     "priceCurrency": "BDT",
-    "price": "3498",
+    "price": "3500",
     "availability": "https://schema.org/InStock",
     "itemCondition": "https://schema.org/NewCondition"
   }
@@ -95,20 +95,63 @@
 
 <header>
   <div class="nav">
-    <div class="logo"><a href="../index.html"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
+    <div class="logo"><a href="/"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
     <ul class="nav-links">
-      <li><a href="../index.html">হোম</a></li>
-      <li><a href="index.html">প্রোডাক্ট</a></li>
+      <li><a href="/">হোম</a></li>
+      <li class="has-dropdown">
+        <a href="../furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="../fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a></li>
+          <li><a href="../fashion/index.html?cat=two-piece">টু পিস</a></li>
+          <li><a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
+      <li><a href="index.html">প্রোডাক্ট_পোস্ট</a></li>
       <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
+    <form class="nav-search" action="../search.html" method="GET" role="search">
+      <input type="text" name="q" class="nav-search-input" placeholder="প্রোডাক্ট খুঁজুন" autocomplete="off">
+      <button type="submit" class="nav-search-btn" aria-label="সার্চ করুন">🔍</button>
+    </form>
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
-        <a href="../index.html">হোম</a>
+        <a href="/">হোম</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a>
+            <a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a>
+            <a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a>
+            <a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a>
+            <a href="../fashion/index.html?cat=two-piece">টু পিস</a>
+            <a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
         <a href="index.html">প্রোডাক্ট</a>
         <a href="../about-us.html">আমাদের সম্পর্কে</a>
       </div>
       <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
-      <a href="../index.html#order" class="nav-cta">অর্ডার করুন</a>
+      <a href="/#order" class="nav-cta">অর্ডার করুন</a>
     </div>
     <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="মেনু" aria-haspopup="true" aria-expanded="false">☰</button>
   </div>
@@ -130,21 +173,19 @@
       <div class="product-info">
         <div class="eyebrow">Close Mesh, Maamme Counter Chair Price 3500 taka</div>
         <h1>কাউন্টার চেয়ার – মজবুত স্টিল | দাম ৳৩৫০০ Maamme Counter Chair price 3500</h1>
-        <div class="product-price">৳ ৩,৪৯৮<span>প্রতি পিস</span></div>
+        <div class="product-price">৳ ৩,৫০০<span>প্রতি পিস</span></div>
 
-        <a href="../index.html#order" class="submit-btn product-order-btn" style="width:auto; padding:14px 32px;">অর্ডার করুন</a>
+        <a href="/?product=counter-chair-green#order" class="submit-btn product-order-btn" style="width:auto; padding:14px 32px;">অর্ডার করুন</a>
 
         <ul class="spec-list">
-          <li><span>হাতলযুক্ত কাউন্টার চেয়ার</span><span></span></li>
-          <li><span>নাম</span><span>&quot;হাতলযুক্ত কাউন্টার চেয়ার-Counter Chair with Handle&quot;</span></li>
-          <li><span>মোট উচ্চতা</span><span>&quot;(উপর থেকে নিচ পর্যন্ত): 36 ইঞ্চি. Total height: 36 inches&quot;</span></li>
-          <li><span>সিটের উচ্চতা</span><span>&quot;সর্বোচ্চ 24 ইঞ্চি, সর্বনিম্ন 18 ইঞ্চি. Seat level: Minimum height 18 inches and Maximum height 24 inches&quot;</span></li>
+          <li><span>নাম</span><span>হাতলযুক্ত কাউন্টার চেয়ার-Counter Chair with Handle</span></li>
+          <li><span>মোট উচ্চতা</span><span>(উপর থেকে নিচ পর্যন্ত): 36 ইঞ্চি. Total height: 36 inches</span></li>
+          <li><span>সিটের উচ্চতা</span><span>সর্বোচ্চ 24 ইঞ্চি, সর্বনিম্ন 18 ইঞ্চি. Seat level: Minimum height 18 inches and Maximum height 24 inches</span></li>
           <li><span>প্রয়োজনীয় জায়গা</span><span>18 ইঞ্চি</span></li>
-          <li><span>গ্যাস লিফট</span><span>&quot;অরিজিনাল চায়না গ্যাস লিফট. Gas Lift original China product&quot;</span></li>
-          <li><span>মেটাল</span><span>&quot;পেডাল অরিজিনাল SS (স্টেইনলেস স্টিল). Stainless Steel Chair&quot;</span></li>
-          <li><span>হাতল</span><span>&quot;ফাইবার প্লাস্টিক. Handle: Fiber plastic&quot;</span></li>
-          <li><span>১ বছরের ওয়ারেন্টি প্রযোজ্য।</span><span></span></li>
-          <li><span>সমগ্র বাংলাদেশ জুড়ে ডেলিভারি দেওয়া হয়</span><span></span></li>
+          <li><span>গ্যাস লিফট</span><span>অরিজিনাল চায়না গ্যাস লিফট. Gas Lift original China product</span></li>
+          <li><span>মেটাল</span><span>পেডাল অরিজিনাল SS (স্টেইনলেস স্টিল). Stainless Steel Chair</span></li>
+          <li><span>হাতল</span><span>ফাইবার প্লাস্টিক. Handle: Fiber plastic</span></li>
+          <li><span>ডেলিভারি</span><span>সমগ্র বাংলাদেশ জুড়ে</span></li>
         </ul>
       </div>
 
@@ -157,13 +198,13 @@
         হাতলযুক্ত কাউন্টার চেয়ার
       </p>
       <p>
-        নাম: &quot;হাতলযুক্ত কাউন্টার চেয়ার-Counter Chair with Handle&quot;<br>
-        মোট উচ্চতা: &quot;(উপর থেকে নিচ পর্যন্ত): 36 ইঞ্চি. Total height: 36 inches&quot;<br>
-        সিটের উচ্চতা: &quot;সর্বোচ্চ 24 ইঞ্চি, সর্বনিম্ন 18 ইঞ্চি. Seat level: Minimum height 18 inches and Maximum height 24 inches&quot;<br>
+        নাম: হাতলযুক্ত কাউন্টার চেয়ার-Counter Chair with Handle<br>
+        মোট উচ্চতা: (উপর থেকে নিচ পর্যন্ত): 36 ইঞ্চি. Total height: 36 inches<br>
+        সিটের উচ্চতা: সর্বোচ্চ 24 ইঞ্চি, সর্বনিম্ন 18 ইঞ্চি. Seat level: Minimum height 18 inches and Maximum height 24 inches<br>
         প্রয়োজনীয় জায়গা: 18 ইঞ্চি<br>
-        গ্যাস লিফট: &quot;অরিজিনাল চায়না গ্যাস লিফট. Gas Lift original China product&quot;<br>
-        মেটাল: &quot;পেডাল অরিজিনাল SS (স্টেইনলেস স্টিল). Stainless Steel Chair&quot;<br>
-        হাতল: &quot;ফাইবার প্লাস্টিক. Handle: Fiber plastic&quot;<br>
+        গ্যাস লিফট: অরিজিনাল চায়না গ্যাস লিফট. Gas Lift original China product<br>
+        মেটাল: পেডাল অরিজিনাল SS (স্টেইনলেস স্টিল). Stainless Steel Chair<br>
+        হাতল: ফাইবার প্লাস্টিক. Handle: Fiber plastic<br>
         ১ বছরের ওয়ারেন্টি প্রযোজ্য।:<br>
         সমগ্র বাংলাদেশ জুড়ে ডেলিভারি দেওয়া হয়:
       </p>
@@ -216,9 +257,13 @@
       <h2>একই কালেকশনের অন্যান্য প্রোডাক্ট</h2>
       <div class="related-links">
         <a href="index.html">সব প্রোডাক্ট দেখুন</a>
-        <a href="Counter-chair-black.html">কাউন্টার চেয়ার-কালো</a>
-        <a href="Counter-chair-komola.html">কাউন্টার চেয়ার-কমলা</a>
+        <a href="kaunter-chair-kalo.html">কাউন্টার চেয়ার-কালো</a>
+        <a href="kaunter-chair-komola.html">কাউন্টার চেয়ার-কমলা</a>
         <a href="kaunter-chair-golapi.html">কাউন্টার চেয়ার-গোলাপি</a>
+        <a href="kaunter-chair-coffee.html">কাউন্টার চেয়ার-কফি</a>
+        <a href="armless-counter-chair-black.html">আর্মলেস কাউন্টার চেয়ার (কালো)</a>
+        <a href="arms-counter-chair-black.html">হাতলযুক্ত কাউন্টার চেয়ার (কালো)</a>
+        <a href="tulip-chair-green.html">টিউলিপ চেয়ার</a>
       </div>
     </div>
 
@@ -277,6 +322,12 @@
   window.addEventListener('resize', () => {
     if (window.innerWidth > 560) closeMobileMenu();
   });
+
+
+  function toggleMobileSubmenu(btn) {
+    const group = btn.closest('.mobile-nav-group');
+    if (group) group.classList.toggle('open');
+  }
 </script>
 
 </body>
