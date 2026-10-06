@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="../style.css?v=6">
+<script src="../pixel.js"></script>
 <style>
   /* এই পেজের জন্য কিছু addition — বাকি সব ../style.css থেকে আসছে (track.html/complain.html-এর প্যাটার্নেই) */
   .listing-section{padding:44px 0 64px;}
@@ -124,8 +125,8 @@
       <p>প্রতিটা প্রোডাক্টের বিস্তারিত বিবরণ, মাপ, দাম ও ছবি দেখতে নিচের যেকোনো প্রোডাক্টে ক্লিক করুন।</p>
     </div>
 
-    <!-- প্রোডাক্ট কার্ডগুলো এখন এডমিন প্যানেলের "পোস্ট" ট্যাব থেকে ম্যানেজ করা Firestore
-         posts কালেকশন থেকে posts-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় -->
+    <!-- প্রোডাক্ট কার্ডগুলো এডমিন প্যানেলের "পোস্ট" ট্যাব থেকে ম্যানেজ করা Firestore
+         posts কালেকশন থেকে posts-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় (ড্রাফট বাদে) -->
     <div class="product-grid-full" id="postsGrid">
       <p style="grid-column:1/-1; color:#6b7690;">লোড হচ্ছে...</p>
     </div>
@@ -187,9 +188,20 @@
     if (window.innerWidth > 560) closeMobileMenu();
   });
 
+  // মোবাইলে "ফার্নিচার"/"ফ্যাশন" বাটনে ক্লিক করলে সাব-মেনু খোলে/বন্ধ হয় (হোমপেজের মতোই)
   function toggleMobileSubmenu(btn) {
-    const group = btn.closest('.mobile-nav-group');
-    if (group) group.classList.toggle('open');
+    const submenu = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+
+    document.querySelectorAll('.mobile-nav-parent.open').forEach(otherBtn => {
+      if (otherBtn !== btn) {
+        otherBtn.classList.remove('open');
+        if (otherBtn.nextElementSibling) otherBtn.nextElementSibling.classList.remove('open');
+      }
+    });
+
+    btn.classList.toggle('open', !isOpen);
+    if (submenu) submenu.classList.toggle('open', !isOpen);
   }
 </script>
 
@@ -197,7 +209,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="../firebase-init.js"></script>
-<script src="posts-grid.js"></script>
+<script src="posts-grid.js?v=2"></script>
 
 </body>
 </html>

@@ -31,8 +31,27 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-db.collection('posts').orderBy('order', 'asc').get()
-  .then((snapshot) => {
+// ছবির path — posts-এ সাধারণত শুধু ফাইলের নাম ("chair1.jpeg") থাকে, যা ../images/ ফোল্ডারে আছে।
+// কিন্তু পুরো URL (https://…) বা "images/…" দিয়ে শুরু হলে সেটাও যেন ভাঙা ছবি না হয়।
+function imageSrc(image) {
+  const img = String(image || '').trim();
+  if (/^(?:https?:)?\/\//.test(img) || img.startsWith('data:')) return img;
+  if (img.startsWith('images/')) return '../' + img;
+  return '../images/' + img.replace(/^\/+/, '');
+}
+
+// orderBy('order') বাদ — Firestore এমন পোস্ট বাদ দিয়ে দেয় যেগুলোতে order ফিল্ড নেই, ফলে সেগুলো
+// গ্রিডে আসত না। তাই সব এনে এখানেই order অনুযায়ী সাজানো হয় (order না থাকলে সবার শেষে)।
+db.collection('posts').get()
+  .then((snapshotRaw) => {
+    const docs = [];
+    snapshotRaw.forEach((d) => docs.push(d));
+    docs.sort((a, b) => {
+      const ao = a.data().order, bo = b.data().order;
+      return (Number.isFinite(ao) ? ao : 1e9) - (Number.isFinite(bo) ? bo : 1e9);
+    });
+    const snapshot = { empty: docs.length === 0, forEach: (cb) => docs.forEach(cb) };
+
     if (snapshot.empty) {
       postsGrid.innerHTML = '<p style="grid-column:1/-1;">এখনো কোনো প্রোডাক্ট পোস্ট নেই।</p>';
       return;
@@ -51,7 +70,7 @@ db.collection('posts').orderBy('order', 'asc').get()
       html += `
       <a href="${escapeHtml(slug)}.html" class="product-card-link">
         <div class="card">
-          <div class="card-art"><img class="card-photo" src="../images/${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
+          <div class="card-art"><img class="card-photo" src="${escapeHtml(imageSrc(p.image))}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" onerror="this.style.display='none';"></div>
           <div class="card-body">
             <div class="eyebrow" style="color:var(--brass);">${escapeHtml(p.tag || '')}</div>
             <h2>${escapeHtml(p.name)}</h2>
