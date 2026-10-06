@@ -62,12 +62,20 @@ function renderGrid(query) {
     return;
   }
 
-  const filtered = allProducts.filter(p => (p.name || '').toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q));
+  // একাধিক শব্দ লিখলে (যেমন "স্টিল চেয়ার") শব্দগুলো নামে/পুরো নামে/ট্যাগে যেকোনো ক্রমে থাকলেই মেলে —
+  // আগে পুরো বাক্যটা হুবহু পরপর থাকতে হতো, তাই "চেয়ার স্টিল" বা মাঝে শব্দ থাকলে কিছু পাওয়া যেত না
+  const words = q.split(/\s+/).filter(Boolean);
+  const filtered = allProducts.filter(p => {
+    const haystack = ((p.name || '') + ' ' + (p.fullName || '') + ' ' + (p.tag || '')).toLowerCase();
+    return words.every(w => haystack.includes(w));
+  });
 
   if (filtered.length === 0) {
     grid.innerHTML = '<p style="grid-column:1/-1; color:#6b7690;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>';
     return;
   }
+
+  searchSubtext.textContent = toBanglaNumber(filtered.length) + 'টি প্রোডাক্ট আপনার সার্চের সাথে মিলেছে।';
 
   let html = '';
   filtered.forEach((p) => {
@@ -76,7 +84,7 @@ function renderGrid(query) {
     html += `
       <div class="card reveal in">
         <a href="${detailUrl}" style="display:block; text-decoration:none; color:inherit;">
-          <div class="card-art"><img class="card-photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
+          <div class="card-art"><img class="card-photo" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" onerror="this.style.display='none';"></div>
         </a>
         <div class="card-body">
           <div class="tag">${escapeHtml(p.tag || '')}</div>
@@ -138,6 +146,8 @@ db.collection('products').get()
   .then((snapshot) => {
     allProducts = [];
     snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
+    // ফলাফল ক্রম নম্বর (order) অনুযায়ী; order না থাকলে সবার শেষে
+    allProducts.sort((a, b) => (Number.isFinite(a.order) ? a.order : 1e9) - (Number.isFinite(b.order) ? b.order : 1e9));
     renderGrid(initialQuery);
   })
   .catch((err) => {

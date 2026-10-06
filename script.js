@@ -19,6 +19,18 @@ const FALLBACK_SVG = `
     </g>
   </svg>`;
 
+// Firestore থেকে আসা নাম/ট্যাগ/স্লাগ/ছবি HTML ও attribute-এ বসানোর আগে escape করা হয় —
+// নাহলে নামে \" বা < থাকলে কার্ড ভেঙে যায় (বা অন্য কিছু ঢুকে পড়তে পারে)।
+function escapeHtml(value) {
+  const str = (value === undefined || value === null) ? '' : String(value);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatTaka(n) {
   return '৳ ' + n.toLocaleString('en-IN');
 }
@@ -60,15 +72,17 @@ function formatBengaliDate(date) {
 // দুই জায়গাতেই (প্রথম লোড ও সার্চের পর রি-রেন্ডারে) একই ফাংশন ব্যবহার হয়
 function buildProductCardHtml(p) {
   const priceFormatted = Number(p.price).toLocaleString('en-IN');
+  const slug = escapeHtml(p.slug);
+  const fullName = escapeHtml(p.fullName);
   return `
-    <div class="card reveal in" id="${p.slug}" data-product="${p.fullName}">
+    <div class="card reveal in" id="${slug}" data-product="${fullName}">
       <div class="card-art">
-        <img class="card-photo" src="${p.image}" alt="${p.fullName}" onerror="this.style.display='none';">
+        <img class="card-photo" src="${escapeHtml(p.image)}" alt="${fullName}" loading="lazy" decoding="async" onerror="this.style.display='none';">
         <div class="card-fallback">${FALLBACK_SVG}</div>
       </div>
       <div class="card-body">
-        <div class="tag">${p.tag || ''}</div>
-        <h3>${p.name}</h3>
+        <div class="tag">${escapeHtml(p.tag || '')}</div>
+        <h3>${escapeHtml(p.name)}</h3>
         <div class="details-price-row">
           <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
           <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
@@ -76,9 +90,9 @@ function buildProductCardHtml(p) {
         <p>${formatDescription(p.description)}</p>
         <div class="card-foot">
           <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
-          <button class="pick-btn" type="button" data-select="${p.fullName} — ৳${priceFormatted}" data-name="${p.fullName}" data-price="${p.price}" data-slug="${p.slug}">অর্ডার করুন</button>
+          <button class="pick-btn" type="button" data-select="${fullName} — ৳${priceFormatted}" data-name="${fullName}" data-price="${Number(p.price) || 0}" data-slug="${slug}">অর্ডার করুন</button>
         </div>
-        <button class="copy-link-btn" type="button" data-slug="${p.slug}">🔗 লিংক কপি করুন</button>
+        <button class="copy-link-btn" type="button" data-slug="${slug}">🔗 লিংক কপি করুন</button>
       </div>
     </div>`;
 }
@@ -114,7 +128,7 @@ function loadProducts() {
         // যোগ হয় — কারণ furniture/fashion পেজের "অর্ডার করুন" বাটন থেকে যেকোনো প্রোডাক্ট
         // এখানে এসে অটো-সিলেক্ট হতে পারে, সেটা হোমপেজের গ্রিডে দেখানো হোক বা না হোক।
         const priceFormatted = Number(p.price).toLocaleString('en-IN');
-        optionsHtml += `<option data-price="${p.price}" data-slug="${p.slug}">${p.fullName} — ৳${priceFormatted}</option>`;
+        optionsHtml += `<option data-price="${Number(p.price) || 0}" data-slug="${escapeHtml(p.slug)}">${escapeHtml(p.fullName)} — ৳${priceFormatted}</option>`;
 
         // হোমপেজের গ্রিডে কার্ড হিসেবে দেখানো হয় শুধু দুই শর্তের যেকোনো একটায়:
         // ১) Category = "Home" (এটাই তার স্থায়ী জায়গা), অথবা
@@ -131,7 +145,8 @@ function loadProducts() {
 
       // dropdown-এ "কাস্টম অর্ডার" এর ঠিক আগে প্রোডাক্টগুলো বসানো হচ্ছে
       const customOption = productSelect.querySelector('option[data-price="0"]');
-      customOption.insertAdjacentHTML('beforebegin', optionsHtml);
+      if (customOption) customOption.insertAdjacentHTML('beforebegin', optionsHtml);
+      else productSelect.insertAdjacentHTML('beforeend', optionsHtml);
 
       renderProductsGrid();
 
@@ -139,18 +154,22 @@ function loadProducts() {
       // সেই স্লাগ মিলিয়ে dropdown-এ প্রোডাক্টটা অটো-সিলেক্ট করা ও কার্ড হাইলাইট করা হয়
       const preselectSlug = new URLSearchParams(location.search).get('product');
       if (preselectSlug) {
-        const matchingOption = productSelect.querySelector(`option[data-slug="${preselectSlug}"]`);
+        // attribute selector-এ সরাসরি URL-এর মান বসালে বিশেষ চিহ্নে ভেঙে যেত, তাই লুপ দিয়ে মেলানো হচ্ছে
+        const matchingOption = Array.from(productSelect.options).find(o => o.getAttribute('data-slug') === preselectSlug);
         if (matchingOption) {
           productSelect.value = matchingOption.value;
           updateTotal();
-          const matchingBtn = document.querySelector(`.pick-btn[data-slug="${preselectSlug}"]`);
+          const matchingBtn = Array.from(document.querySelectorAll('.pick-btn')).find(b => b.getAttribute('data-slug') === preselectSlug);
           if (matchingBtn) matchingBtn.classList.add('active');
         }
       }
 
       // URL-এ যদি #slug থাকে (কেউ শেয়ার করা লিংকে ঢুকেছে), সেই প্রোডাক্টে স্ক্রল করা
       if (location.hash) {
-        const target = document.querySelector(location.hash);
+        // querySelector(location.hash) সংখ্যা দিয়ে শুরু/বিশেষ চিহ্নযুক্ত হ্যাশে এরর দিত — getElementById নিরাপদ
+        let hashId = location.hash.slice(1);
+        try { hashId = decodeURIComponent(hashId); } catch (err) { /* যেমন আছে তেমনই */ }
+        const target = hashId ? document.getElementById(hashId) : null;
         if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
       }
     })
@@ -287,6 +306,36 @@ function isValidBdPhone(value) {
   return /^(?:\+?880|0)1[3-9]\d{8}$/.test(cleaned);
 }
 
+// অর্ডার ID — আগে Date.now()-এর শেষ ৬ অঙ্ক ছিল (প্রতি ~১৭ মিনিটে একই সংখ্যা ফিরে আসত)।
+// এখন ব্রাউজারের crypto থেকে র‍্যান্ডম ৬ সংখ্যা — ফরম্যাট আগের মতোই "AS-123456", তাই
+// track/complain/admin কিছুই বদলাতে হয় না। কনফার্মের সময় আবার ডুপ্লিকেট আছে কিনা মিলিয়ে দেখা হয়।
+function generateOrderId() {
+  let n;
+  if (window.crypto && window.crypto.getRandomValues) {
+    const a = new Uint32Array(1);
+    window.crypto.getRandomValues(a);
+    n = 100000 + (a[0] % 900000);
+  } else {
+    n = 100000 + Math.floor(Math.random() * 900000);
+  }
+  return 'AS-' + n;
+}
+
+// একই orderId দিয়ে আগে থেকে কোনো অর্ডার থাকলে নতুন ID বানিয়ে নেয় (সর্বোচ্চ ৫ বার)।
+// চেক ব্যর্থ হলে (যেমন নেটওয়ার্ক/rules) অর্ডার আটকায় না — আগের মতোই এগিয়ে যায়।
+function ensureUniqueOrderId(attempt) {
+  attempt = attempt || 0;
+  return firebase.firestore().collection('orders').where('orderId', '==', lastOrder.orderId).limit(1).get()
+    .then((snap) => {
+      if (snap.empty || attempt >= 4) return;
+      lastOrder.orderId = generateOrderId();
+      document.getElementById('receiptId').textContent = '#' + lastOrder.orderId;
+      document.getElementById('orderIdField').value = lastOrder.orderId;
+      return ensureUniqueOrderId(attempt + 1);
+    })
+    .catch(() => { /* চেক ছাড়াই এগিয়ে যাও */ });
+}
+
 // Step 1 → Step 2: submitting the form generates the order details / receipt
 const form = document.getElementById('orderForm');
 const receiptView = document.getElementById('receiptView');
@@ -324,7 +373,7 @@ form.addEventListener('submit', (e) => {
 
   const unitPrice = currentUnitPrice();
   const total = unitPrice * qty;
-  const orderId = 'AS-' + Date.now().toString().slice(-6);
+  const orderId = generateOrderId();
   // toLocaleDateString('bn-BD', ...) কিছু ব্রাউজার/ডিভাইসে ভুল/অসম্পূর্ণ সংখ্যা রেন্ডার করে
   // (যেমন "১৭" এর জায়গায় ভাঙা গ্লিফ দেখায়) — তাই নিজেরাই বাংলা সংখ্যা ও মাসের নাম দিয়ে
   // তারিখ বানানো হচ্ছে, timeZone 'Asia/Dhaka' আগের মতোই ধরে রেখে (মধ্যরাতের কাছাকাছি
@@ -366,7 +415,7 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
   btn.textContent = 'পাঠানো হচ্ছে...';
 
   if (window.firebase && firebase.firestore) {
-    firebase.firestore().collection('orders').add({
+    ensureUniqueOrderId().then(() => firebase.firestore().collection('orders').add({
       orderId: lastOrder.orderId,
       name: lastOrder.name,
       phone: lastOrder.phone,
@@ -378,7 +427,7 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       date: lastOrder.dateStr,
       status: 'pending',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
+    }))
     .then(() => {
       btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
       note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
@@ -396,9 +445,12 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
         // দেওয়া হচ্ছে — এটা Meta-র অফিসিয়াল manual advanced matching পদ্ধতি, পিক্সেল
         // নিজেই SHA-256 দিয়ে হ্যাশ করে নেয় (এখানে raw নম্বর পাঠালেই চলে)। এতে নতুন করে
         // PageView ফায়ার হয় না, কারণ PageView আলাদা করে ট্র্যাক করা হয় pixel.js-এ।
+        // Meta চায় ফোন হবে দেশের কোডসহ শুধু সংখ্যা (880…), আর নাম ছোট হাতের অক্ষরে
+        let phDigits = lastOrder.phone.replace(/\D/g, '');
+        if (phDigits.startsWith('0')) phDigits = '880' + phDigits.slice(1);
         fbq('init', '1953763731979924', {
-          ph: lastOrder.phone,
-          fn: lastOrder.name,
+          ph: phDigits,
+          fn: lastOrder.name.toLowerCase(),
           external_id: lastOrder.orderId
         });
 
@@ -417,6 +469,10 @@ document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
       btn.textContent = 'আবার চেষ্টা করুন';
       note.textContent = 'দুঃখিত, পাঠাতে সমস্যা হয়েছে — একটু পর আবার চেষ্টা করুন।';
     });
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'আবার চেষ্টা করুন';
+    note.textContent = 'দুঃখিত, সংযোগে সমস্যা হচ্ছে — ইন্টারনেট চেক করে পেজ রিফ্রেশ করে আবার চেষ্টা করুন।';
   }
 });
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maamme Admin Panel</title>
+    <meta name="robots" content="noindex, nofollow">
 
    <link rel="stylesheet" type="text/css" href="admin.css?v=2">
 </head>
@@ -12,9 +13,9 @@
 <div class="login-box" id="login">
     <h2>Admin Login</h2>
 
-    <input type="email" id="email" placeholder="Admin Email">
+    <input type="email" id="email" placeholder="Admin Email" aria-label="Admin Email" autocomplete="username">
 
-    <input type="password" id="password" placeholder="Password">
+    <input type="password" id="password" placeholder="Password" aria-label="Password" autocomplete="current-password">
 
     <button onclick="login()">Login</button>
 </div>
@@ -247,7 +248,7 @@
 <script src="firebase-init.js"></script>
 
 <!-- Admin logic -->
-<script src="admin.js?v=2"></script>
+<script src="admin.js?v=3"></script>
 
 </body>
 </html>

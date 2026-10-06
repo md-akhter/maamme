@@ -10,8 +10,17 @@ const submitBtn = document.getElementById('complainSubmitBtn');
 const msgEl = document.getElementById('complainMsg');
 
 // track.js-এর normalizeOrderId-এর মতোই — "#", স্পেস বাদ, case ঠিক, শুধু সংখ্যা দিলে AS- জোড়া লাগানো
+// কাস্টমার অনেক সময় বাংলা সংখ্যায় (০১৭১২…) টাইপ করে — ডেটাবেসে সবই ইংরেজি সংখ্যায় আছে,
+// তাই খোঁজার/জমা দেওয়ার আগে বাংলা সংখ্যা ইংরেজিতে বদলে নেওয়া হয়।
+function toEnglishDigits(str) {
+  return String(str).replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
+}
+
 function normalizeOrderId(raw) {
-  let v = raw.trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+  let v = toEnglishDigits(raw).trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+  // "AS123456" বা "AS-123456" — দুইভাবেই লিখলে আসল ফরম্যাট "AS-123456" হিসেবে ধরা হয়
+  const m = v.match(/^AS-?(\d+)$/);
+  if (m) return 'AS-' + m[1];
   if (/^\d+$/.test(v)) {
     v = 'AS-' + v;
   }
@@ -58,7 +67,7 @@ form.addEventListener('submit', (e) => {
 
   const orderIdRaw = cOrderId.value.trim();
   const name = cName.value.trim();
-  const mobile = cMobile.value.trim();
+  const mobile = toEnglishDigits(cMobile.value.trim());   // বাংলা সংখ্যায় লিখলেও ইংরেজিতে বদলে সেভ হবে
   const district = cDistrict.value.trim();
   const message = cMessage.value.trim();
 

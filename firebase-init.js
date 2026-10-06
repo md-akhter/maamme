@@ -1,5 +1,6 @@
-// একবার এখানে কনফিগ করা থাকলে index.html ও admin.html দুটোই এটা শেয়ার করে —
-// আলাদা আলাদা ফাইলে firebaseConfig কপি-পেস্ট করার দরকার নেই।
+// একবার এখানে কনফিগ করা থাকলে সব পেজ (index, track, complain, search, admin, furniture/fashion/products
+// ফোল্ডারের পেজ) এটা শেয়ার করে — আলাদা আলাদা ফাইলে firebaseConfig কপি-পেস্ট করার দরকার নেই।
+// (এই apiKey পাবলিক থাকাই স্বাভাবিক — ডেটার সুরক্ষা firestore.rules-এর ওপর নির্ভর করে, এই কী লুকিয়ে নয়।)
 const firebaseConfig = {
   apiKey: "AIzaSyAB9n2iK6wNdvugRNynR9S7yUP_E1Kl_Xg",
   authDomain: "maamme.firebaseapp.com",
@@ -10,4 +11,7 @@ const firebaseConfig = {
   measurementId: "G-2PWZ2WBMB2"
 };
 
-firebase.initializeApp(firebaseConfig);
+// একই পেজে ভুলক্রমে স্ক্রিপ্টটা দুইবার লোড হলে "Firebase App already exists" এরর এড়াতে
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="style.css?v=6">
+<script src="pixel.js"></script>
 <style>
   /* শুধু ট্র্যাকিং পেজের জন্য কিছু ছোট addition — বাকি সব style.css থেকে আসছে */
   .track-section{background:var(--walnut-950); color:var(--text-light); min-height:100vh; padding:56px 0;}
@@ -123,7 +124,7 @@
 
       <div class="track-form-row">
         <div class="field no-label">
-          <input type="text" id="searchInput" placeholder="যেমন: AS-123456">
+          <input type="text" id="searchInput" placeholder="যেমন: AS-123456" aria-label="অর্ডার আইডি বা ফোন নম্বর" maxlength="30" autocomplete="off">
         </div>
         <button class="track-btn" id="searchBtn" onclick="doSearch()">খুঁজুন</button>
       </div>
@@ -143,7 +144,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-init.js"></script>
-<script src="track.js"></script>
+<script src="track.js?v=2"></script>
 
 </body>
 </html>

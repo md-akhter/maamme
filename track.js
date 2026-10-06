@@ -34,6 +34,16 @@ function switchMethod(mode) {
   resultsEl.innerHTML = '';
 }
 
+// ট্যাব দুটো <div> — কীবোর্ড/স্ক্রিন-রিডারেও যেন কাজ করে (Tab দিয়ে ফোকাস, Enter/Space দিয়ে বাছাই)
+['tabOrderId', 'tabPhone'].forEach((id) => {
+  const el = document.getElementById(id);
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
+});
+
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') doSearch();
 });
@@ -67,12 +77,43 @@ function escapeHtml(value) {
 // "#" চিহ্নটাও চলে আসতে পারে, যেটা Firestore-এ সংরক্ষিত আসল ID-র সাথে মিলবে না।
 // তাই এখানে "#", অতিরিক্ত স্পেস বাদ দেওয়া হচ্ছে, আর case-ও ঠিক করে দেওয়া হচ্ছে।
 // শুধু সংখ্যা টাইপ করলে (AS- ছাড়া) সেটাও সামলে নেওয়া হচ্ছে।
+// কাস্টমার অনেক সময় বাংলা সংখ্যায় (০১৭১২…) টাইপ করে — ডেটাবেসে সবই ইংরেজি সংখ্যায় আছে,
+// তাই খোঁজার/জমা দেওয়ার আগে বাংলা সংখ্যা ইংরেজিতে বদলে নেওয়া হয়।
+function toEnglishDigits(str) {
+  return String(str).replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
+}
+
 function normalizeOrderId(raw) {
-  let v = raw.trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+  let v = toEnglishDigits(raw).trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+  // "AS123456" বা "AS-123456" — দুইভাবেই লিখলে আসল ফরম্যাট "AS-123456" হিসেবে ধরা হয়
+  const m = v.match(/^AS-?(\d+)$/);
+  if (m) return 'AS-' + m[1];
   if (/^\d+$/.test(v)) {
     v = 'AS-' + v;
   }
   return v;
+}
+
+// অর্ডার ফর্মে ফোন নম্বর কাস্টমার যেভাবে টাইপ করেছিল সেভাবেই সেভ হয় (01712345678, +8801712345678,
+// 01712-345678 ইত্যাদি) — তাই এখানে একই নম্বরের সবচেয়ে প্রচলিত লেখার ধরনগুলো একসাথে খোঁজা হয়,
+// নাহলে অন্য ফরম্যাটে খুঁজলে অর্ডার থাকলেও "পাওয়া যায়নি" দেখাত। কোনো ডেটা বদলানো হয় না।
+function phoneVariants(raw) {
+  const typed = raw.trim();
+  let digits = toEnglishDigits(typed).replace(/\D/g, '');
+  if (digits.startsWith('880')) digits = '0' + digits.slice(3);
+  else if (/^1[3-9]\d{8}$/.test(digits)) digits = '0' + digits;
+  if (!/^01[3-9]\d{8}$/.test(digits)) return [typed];          // বাংলাদেশি নম্বরের ধরন না হলে যেমন আছে তেমনই খোঁজা
+  const rest = digits.slice(1);                                   // 1712345678
+  const list = [
+    typed,
+    digits,                                                       // 01712345678
+    '880' + rest,                                                 // 8801712345678
+    '+880' + rest,                                                // +8801712345678
+    digits.slice(0, 5) + '-' + digits.slice(5),                   // 01712-345678
+    digits.slice(0, 5) + ' ' + digits.slice(5),                   // 01712 345678
+    '+880 ' + rest.slice(0, 4) + '-' + rest.slice(4),             // +880 1712-345678
+  ];
+  return [...new Set(list)];
 }
 
 function doSearch() {
@@ -87,10 +128,17 @@ function doSearch() {
   hideMsg();
   resultsEl.innerHTML = '';
 
-  const field = searchMode === 'orderId' ? 'orderId' : 'phone';
-  const value = searchMode === 'orderId' ? normalizeOrderId(raw) : raw;
+  let query;
+  if (searchMode === 'orderId') {
+    query = db.collection('orders').where('orderId', '==', normalizeOrderId(raw));
+  } else {
+    const variants = phoneVariants(raw);
+    query = variants.length > 1
+      ? db.collection('orders').where('phone', 'in', variants)
+      : db.collection('orders').where('phone', '==', variants[0]);
+  }
 
-  db.collection('orders').where(field, '==', value).get()
+  query.get()
     .then((snapshot) => {
       searchBtn.disabled = false;
       searchBtn.textContent = 'খুঁজুন';
@@ -169,7 +217,8 @@ function renderOrderCard(o, complaint) {
       </div>`;
   }
 
-  const currentIndex = STATUS_STEPS.findIndex(s => s.key === status);
+  // স্ট্যাটাস অজানা হলে (যেমন ভবিষ্যতে নতুন কোনো স্ট্যাটাস যোগ হলে) ধাপগুলো খালি না দেখিয়ে প্রথম ধাপে ধরা হয়
+  const currentIndex = Math.max(0, STATUS_STEPS.findIndex(s => s.key === status));
 
   const stepsHtml = STATUS_STEPS.map((s, i) => {
     let cls = 'status-step';

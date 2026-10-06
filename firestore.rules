@@ -1,23 +1,85 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /orders/{orderId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if request.auth != null;
+
+    // ============================================================
+    // সহায়ক ফাংশন
+    // ============================================================
+
+    // অ্যাডমিন কে? — শুধু এই ইমেইল দিয়ে লগইন করা অ্যাকাউন্ট। অন্য কেউ (এমনকি লগইন করা অন্য ইউজারও)
+    // অর্ডার/অভিযোগ আপডেট বা ডিলিট, আর প্রোডাক্ট/পোস্ট লেখা বা মুছতে পারবে না।
+    // ⚠️ ইমেইল বদলালে (বা অন্য ইমেইলে অ্যাডমিন লগইন করলে) এই লাইনটা মিলিয়ে নিতে হবে, নাহলে অ্যাডমিন প্যানেল সেভ/ডিলিট করতে পারবে না।
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'md.akhterhossain5051@gmail.com';
     }
+
+    function isStr(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    // হোম পেজের অর্ডার ফর্ম (script.js) যে ফিল্ডগুলো পাঠায়, শুধু সেগুলোই — আর status সবসময় "pending"।
+    // এতে বাইরের কেউ ইচ্ছেমতো ফিল্ড/স্ট্যাটাস/ভুয়া তারিখ বসিয়ে অর্ডার বানাতে পারবে না।
+    function validOrder() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['orderId', 'name', 'phone', 'product', 'quantity', 'address', 'total', 'date', 'status', 'createdAt'])
+        && d.keys().hasOnly(['orderId', 'name', 'phone', 'product', 'quantity', 'address', 'note', 'total', 'date', 'status', 'createdAt'])
+        && d.orderId is string && d.orderId.matches('AS-[0-9]{6}')
+        && isStr(d.name, 1, 120)
+        && isStr(d.phone, 5, 30)
+        && isStr(d.product, 1, 500)
+        && d.quantity is number && d.quantity >= 1 && d.quantity <= 10000
+        && isStr(d.address, 1, 500)
+        && (!('note' in d) || (d.note is string && d.note.size() <= 3000))
+        && d.total is number && d.total >= 0 && d.total <= 100000000
+        && isStr(d.date, 1, 60)
+        && d.status == 'pending'
+        && d.createdAt == request.time;
+    }
+
+    // অভিযোগ ফর্ম (complain.js) যে ফিল্ডগুলো পাঠায়, শুধু সেগুলো — আর status সবসময় "new"।
+    function validComplaint() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['orderId', 'name', 'mobile', 'district', 'message', 'status', 'createdAt'])
+        && d.keys().hasOnly(['orderId', 'name', 'mobile', 'district', 'message', 'status', 'createdAt'])
+        && isStr(d.orderId, 1, 30)
+        && isStr(d.name, 1, 120)
+        && isStr(d.mobile, 5, 30)
+        && isStr(d.district, 1, 100)
+        && isStr(d.message, 1, 3000)
+        && d.status == 'new'
+        && d.createdAt == request.time;
+    }
+
+    // ============================================================
+    // কালেকশন
+    // ============================================================
+
+    match /orders/{orderId} {
+      // পড়া পাবলিক রাখা হয়েছে, কারণ track.html (অর্ডার আইডি/ফোন দিয়ে খোঁজা) আর complain.html
+      // কাস্টমারের ব্রাউজার থেকেই orders কোয়েরি করে। (এটার পূর্ণ সমাধান Cloud Function — পরে।)
+      allow read: if true;
+      allow create: if validOrder();
+      allow update, delete: if isAdmin();
+    }
+
+    match /complaints/{complaintId} {
+      // track.html অভিযোগের স্ট্যাটাস দেখায় আর complain.html খোলা অভিযোগ আছে কিনা মিলায়, তাই পড়া পাবলিক।
+      allow read: if true;
+      allow create: if validComplaint();
+      allow update, delete: if isAdmin();
+    }
+
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
+
     match /posts/{postId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
-    match /complaints/{complaintId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if request.auth != null;
-    }
+
+    // বাকি সব কালেকশন ডিফল্টভাবে বন্ধ।
   }
 }

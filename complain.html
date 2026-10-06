@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="style.css?v=6">
+<script src="pixel.js"></script>
 <style>
   /* শুধু অভিযোগ পেজের জন্য কিছু addition — বাকি সব style.css থেকে আসছে (track.html-এর মতোই প্যাটার্ন) */
   .complain-section{background:var(--walnut-950); color:var(--text-light); min-height:100vh; padding:56px 0;}
@@ -59,28 +60,28 @@
         <form id="complainForm">
           <div class="field">
             <label for="cOrderId">অর্ডার আইডি *</label>
-            <input type="text" id="cOrderId" placeholder="যেমন: AS-123456" required>
+            <input type="text" id="cOrderId" placeholder="যেমন: AS-123456" required maxlength="20" autocomplete="off">
           </div>
 
           <div class="field-row">
             <div class="field">
               <label for="cName">নাম *</label>
-              <input type="text" id="cName" placeholder="আপনার নাম" required>
+              <input type="text" id="cName" placeholder="আপনার নাম" required maxlength="80" autocomplete="name">
             </div>
             <div class="field">
               <label for="cMobile">মোবাইল নম্বর *</label>
-              <input type="text" id="cMobile" placeholder="01712345678" required>
+              <input type="text" id="cMobile" placeholder="01712345678" required maxlength="20" inputmode="tel" autocomplete="tel">
             </div>
           </div>
 
           <div class="field">
             <label for="cDistrict">জেলার নাম *</label>
-            <input type="text" id="cDistrict" placeholder="যেমন: ঢাকা" required>
+            <input type="text" id="cDistrict" placeholder="যেমন: ঢাকা" required maxlength="60">
           </div>
 
           <div class="field">
             <label for="cMessage">অভিযোগের বিবরণ *</label>
-            <textarea id="cMessage" placeholder="সমস্যাটি বিস্তারিত লিখুন..." required></textarea>
+            <textarea id="cMessage" placeholder="সমস্যাটি বিস্তারিত লিখুন..." required maxlength="1500"></textarea>
           </div>
 
           <button type="submit" class="submit-btn" id="complainSubmitBtn">অভিযোগ জমা দিন</button>
@@ -98,7 +99,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-init.js"></script>
-<script src="complain.js"></script>
+<script src="complain.js?v=2"></script>
 
 </body>
 </html>

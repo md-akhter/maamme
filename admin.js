@@ -74,14 +74,21 @@ let allOrders = [];      // সব অর্ডার এখানে ক্য�
 let currentFilter = 'all';
 let orderSearchQuery = ''; // ফোন নম্বর/অর্ডার আইডি সার্চ বক্সের বর্তমান টেক্সট
 
+function createdMs(o) {
+  return (o.createdAt && typeof o.createdAt.toMillis === 'function') ? o.createdAt.toMillis() : 0;
+}
+
 function loadOrders() {
   const list = document.getElementById("ordersList");
   list.innerHTML = "লোড হচ্ছে...";
 
-  db.collection("orders").orderBy("createdAt", "desc").get()
+  // orderBy("createdAt") ব্যবহার করলে Firestore সেই অর্ডারগুলো বাদ দিয়ে দেয় যেগুলোতে createdAt ফিল্ড নেই
+  // (পুরনো অর্ডার) — তাই সব অর্ডার এনে এখানেই নতুন-আগে ক্রমে সাজানো হচ্ছে, কোনো অর্ডার হারাবে না।
+  db.collection("orders").get()
     .then((snapshot) => {
       allOrders = [];
       snapshot.forEach((doc) => allOrders.push({ id: doc.id, ...doc.data() }));
+      allOrders.sort((a, b) => createdMs(b) - createdMs(a));
       document.getElementById('ordersCount').textContent = allOrders.length ? allOrders.length : '';
       renderOrders();
       updateCsvFilterCount();
@@ -375,6 +382,15 @@ function updateComplaintStatus(id, newStatus) {
 
 let allProducts = [];
 
+// slug-ই doc ID — তাই নতুন আইটেমে আগে থেকে থাকা কোনো slug দিলে সেই পুরনো আইটেমটা নিঃশব্দে মুছে
+// অন্যটা বসে যেত। সেভের আগে এখন জিজ্ঞেস করা হয়। (চেক করতে না পারলে সেভ আটকায় না)
+function confirmSlugOverwrite(collection, slug, editingId) {
+  if (editingId && editingId === slug) return Promise.resolve(true);   // নিজেকেই এডিট করছে
+  return db.collection(collection).doc(slug).get()
+    .then((doc) => !doc.exists || confirm('"' + slug + '" slug-এ আগে থেকেই একটা আইটেম আছে। সেভ করলে পুরনোটা মুছে এটা বসে যাবে। তবুও সেভ করবেন?'))
+    .catch(() => true);
+}
+
 // Category dropdown বদলালে সেই অনুযায়ী সঠিক Sub-category dropdown দেখায়/লুকায়
 function onProductCategoryChange() {
   const category = document.getElementById("pCategory").value;
@@ -397,8 +413,9 @@ function loadProducts() {
       }
       let html = "";
       const total = snapshot.size;
-      snapshot.forEach((doc, index) => {
-        const p = doc.data();
+      allProducts.forEach((prod, index) => {   // snapshot.forEach-এ index পাওয়া যায় না (#NaN দেখাত), তাই array থেকে
+        const p = prod;
+        const doc = { id: prod.id };
         const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
         const position = index + 1;
         html += `
@@ -472,8 +489,10 @@ function saveProduct() {
   if (editingId && editingId !== slug) {
     batch.delete(db.collection("products").doc(editingId));
   }
-  batch.commit()
-    .then(() => {
+  confirmSlugOverwrite("products", slug, editingId)
+    .then((ok) => (ok ? batch.commit().then(() => true) : false))
+    .then((saved) => {
+      if (!saved) return;
       msg.style.color = "#2e7d32";
       msg.textContent = editingId ? "✅ প্রোডাক্ট আপডেট হয়েছে।" : "✅ প্রোডাক্ট যোগ হয়েছে।";
       cancelEdit();
@@ -772,8 +791,10 @@ function savePost() {
   if (editingId && editingId !== post.slug) {
     batch.delete(db.collection("posts").doc(editingId));
   }
-  batch.commit()
-    .then(() => {
+  confirmSlugOverwrite("posts", post.slug, editingId)
+    .then((ok) => (ok ? batch.commit().then(() => true) : false))
+    .then((saved) => {
+      if (!saved) return;
       msg.style.color = "#2e7d32";
       msg.textContent = editingId ? "✅ পোস্ট আপডেট হয়েছে। এখন চাইলে HTML ফাইলও নতুন করে ডাউনলোড করে আপলোড করুন।" : "✅ পোস্ট যোগ হয়েছে। এখন \"HTML ফাইল ডাউনলোড করুন\" বাটনে ক্লিক করে ফাইলটা GitHub-এ আপলোড করুন।";
       cancelPostEdit();
@@ -896,7 +917,7 @@ function deletePost(id) {
 const SITE_ORIGIN = 'https://maamme.com';
 
 function buildRelatedLinksHtml(currentSlug) {
-  const others = allPosts.filter(p => p.slug !== currentSlug).slice(0, 3);
+  const others = allPosts.filter(p => p.slug !== currentSlug && p.status !== 'draft').slice(0, 3);   // ড্রাফট পোস্টে লিংক দেওয়া হয় না
   let html = `<a href="index.html">সব প্রোডাক্ট দেখুন</a>`;
   others.forEach(p => {
     html += `\n        <a href="${escapeHtml(p.slug)}.html">${escapeHtml(p.name)}</a>`;
@@ -915,11 +936,32 @@ function buildPostHtml(post) {
     `      <p>\n        ${escapeHtml(p).split('\n').map(l => l.trim()).join('<br>\n        ')}\n      </p>`
   ).join('\n');
   const relatedHtml = buildRelatedLinksHtml(post.slug);
-  const jsonLdDesc = (post.metaDesc || post.shortDesc || post.description[0] || '').replace(/"/g, '\\"');
+  // মেটা বিবরণ ফাঁকা থাকলে shortDesc বা প্রথম প্যারাগ্রাফ থেকে (১৫৫ অক্ষর) — ফাঁকা description ট্যাগ বানানো হয় না
+  const metaDescText = post.metaDesc || post.shortDesc || (post.description[0] || '').replace(/\s+/g, ' ').slice(0, 155);
   const title = post.metaTitle || `${post.name} — দাম ও বৈশিষ্ট্য | Maamme.com`;
   const imageAltText = post.imageAlt || post.name;
   const pageUrl = `${SITE_ORIGIN}/products/${post.slug}.html`;
   const imageUrl = `${SITE_ORIGIN}/images/${post.image}`;
+
+  // JSON-LD এখন JSON.stringify দিয়ে বানানো হয় — আগে নামে " বা & থাকলে বা বিবরণে নতুন লাইন থাকলে
+  // JSON ভেঙে যেত, আর HTML-escape (&amp;, &quot;) ঢুকে গিয়ে গুগলে হুবহু ওই চিহ্নগুলো দেখাত।
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": post.name,
+    "image": imageUrl,
+    "description": metaDescText,
+    "sku": post.slug,
+    "brand": { "@type": "Brand", "name": "Maamme.com" },
+    "offers": {
+      "@type": "Offer",
+      "url": pageUrl,
+      "priceCurrency": "BDT",
+      "price": String(post.price),
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    }
+  }, null, 2).replace(/</g, '\\u003c');   // </script> দিয়ে ট্যাগ বন্ধ হয়ে যাওয়া ঠেকাতে
 
   return `<!DOCTYPE html>
 <html lang="bn">
@@ -927,19 +969,19 @@ function buildPostHtml(post) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
-<meta name="description" content="${escapeHtml(post.metaDesc)}">
+<meta name="description" content="${escapeHtml(metaDescText)}">
 <link rel="canonical" href="${pageUrl}">
 
 <meta property="og:type" content="product">
 <meta property="og:title" content="${escapeHtml(title)}">
-<meta property="og:description" content="${escapeHtml(post.metaDesc)}">
+<meta property="og:description" content="${escapeHtml(metaDescText)}">
 <meta property="og:image" content="${imageUrl}">
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:locale" content="bn_BD">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
-<meta name="twitter:description" content="${escapeHtml(post.metaDesc)}">
+<meta name="twitter:description" content="${escapeHtml(metaDescText)}">
 <meta name="twitter:image" content="${imageUrl}">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -992,46 +1034,70 @@ function buildPostHtml(post) {
 </style>
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Product",
-  "name": "${escapeHtml(post.name).replace(/"/g, '\\"')}",
-  "image": "${imageUrl}",
-  "description": "${jsonLdDesc}",
-  "sku": "${post.slug}",
-  "brand": {
-    "@type": "Brand",
-    "name": "Maamme.com"
-  },
-  "offers": {
-    "@type": "Offer",
-    "url": "${pageUrl}",
-    "priceCurrency": "BDT",
-    "price": "${post.price}",
-    "availability": "https://schema.org/InStock",
-    "itemCondition": "https://schema.org/NewCondition"
-  }
-}
+${jsonLd}
 </script>
 </head>
 <body>
 
 <header>
   <div class="nav">
-    <div class="logo"><a href="../index.html"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
+    <div class="logo"><a href="/"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
     <ul class="nav-links">
-      <li><a href="../index.html">হোম</a></li>
-      <li><a href="index.html">প্রোডাক্ট</a></li>
+      <li><a href="/">হোম</a></li>
+      <li class="has-dropdown">
+        <a href="../furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="../fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a></li>
+          <li><a href="../fashion/index.html?cat=two-piece">টু পিস</a></li>
+          <li><a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
+      <li><a href="index.html">প্রোডাক্ট_পোস্ট</a></li>
       <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
+    <form class="nav-search" action="../search.html" method="GET" role="search">
+      <input type="text" name="q" class="nav-search-input" placeholder="প্রোডাক্ট খুঁজুন" autocomplete="off">
+      <button type="submit" class="nav-search-btn" aria-label="সার্চ করুন">🔍</button>
+    </form>
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
-        <a href="../index.html">হোম</a>
+        <a href="/">হোম</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a>
+            <a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a>
+            <a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a>
+            <a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a>
+            <a href="../fashion/index.html?cat=two-piece">টু পিস</a>
+            <a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
         <a href="index.html">প্রোডাক্ট</a>
         <a href="../about-us.html">আমাদের সম্পর্কে</a>
       </div>
       <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
-      <a href="../index.html#order" class="nav-cta">অর্ডার করুন</a>
+      <a href="/#order" class="nav-cta">অর্ডার করুন</a>
     </div>
     <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="মেনু" aria-haspopup="true" aria-expanded="false">☰</button>
   </div>
@@ -1055,7 +1121,7 @@ function buildPostHtml(post) {
         <h1>${escapeHtml(post.name)}</h1>
         <div class="product-price">${priceDisplay}<span>${escapeHtml(post.priceUnit)}</span></div>
 
-        <a href="../index.html#order" class="submit-btn product-order-btn" style="width:auto; padding:14px 32px;">অর্ডার করুন</a>
+        <a href="/?product=${encodeURIComponent(post.slug)}#order" class="submit-btn product-order-btn" style="width:auto; padding:14px 32px;">অর্ডার করুন</a>
 
         <ul class="spec-list">
 ${specListHtml}
@@ -1131,6 +1197,20 @@ ${descHtml}
   window.addEventListener('resize', () => {
     if (window.innerWidth > 560) closeMobileMenu();
   });
+
+  // মোবাইলে "ফার্নিচার"/"ফ্যাশন" বাটনে ক্লিক করলে সাব-মেনু খোলে/বন্ধ হয়
+  function toggleMobileSubmenu(btn) {
+    const submenu = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+    document.querySelectorAll('.mobile-nav-parent.open').forEach(otherBtn => {
+      if (otherBtn !== btn) {
+        otherBtn.classList.remove('open');
+        if (otherBtn.nextElementSibling) otherBtn.nextElementSibling.classList.remove('open');
+      }
+    });
+    btn.classList.toggle('open', !isOpen);
+    if (submenu) submenu.classList.toggle('open', !isOpen);
+  }
 </script>
 
 </body>
@@ -1192,6 +1272,13 @@ function csvEscape(value) {
 // এটা ঠেকাতে Excel-এর নিজস্ব ট্রিক ব্যবহার করা হচ্ছে: ="01712345678" — এভাবে লিখলে
 // Excel এটাকে ফর্মুলা হিসেবে ধরে, কিন্তু ফলাফল দেখায় ঠিক টেক্সট আকারে, শুরুর 0 সহ।
 // (Google Sheets-ও এটাকে টেক্সট হিসেবেই দেখায়, তাই ওখানেও সমস্যা হয় না।)
+// কাস্টমারের টাইপ করা লেখা (নাম/ঠিকানা/মন্তব্য) =, +, -, @ দিয়ে শুরু হলে Excel/Sheets সেটাকে ফর্মুলা
+// ধরে চালিয়ে দিতে পারে (CSV injection) — শুরুতে ' বসিয়ে সাধারণ টেক্সট করে দেওয়া হয়।
+function csvText(value) {
+  const str = (value === undefined || value === null) ? '' : String(value);
+  return /^[=+\-@\t\r]/.test(str) ? "'" + str : str;
+}
+
 function excelSafeText(value) {
   const str = (value === undefined || value === null) ? '' : String(value);
   return '="' + str.replace(/"/g, '""') + '"';
@@ -1281,16 +1368,16 @@ function exportOrdersToCSV() {
   }
   const headers = ['Order ID', 'তারিখ', 'সময়', 'নাম', 'ফোন', 'প্রোডাক্ট', 'পরিমাণ', 'কালার/হ্যান্ডেল', 'ঠিকানা', 'মন্তব্য', 'মোট (৳)', 'স্ট্যাটাস'];
   const rows = filtered.map(o => [
-    o.orderId || '',
+    csvText(o.orderId || ''),
     excelSafeText(o.date || ''),
     orderTimeStr(o),
-    o.name || '',
+    csvText(o.name || ''),
     excelSafeText(o.phone || ''),
-    o.product || '',
+    csvText(o.product || ''),
     o.quantity || '',
-    o.courierNote || '',
-    o.address || '',
-    o.note || '',
+    csvText(o.courierNote || ''),
+    csvText(o.address || ''),
+    csvText(o.note || ''),
     o.total || 0,
     statusMeta(o.status || 'pending').label
   ]);
