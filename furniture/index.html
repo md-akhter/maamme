@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="../style.css?v=6">
+<script src="../pixel.js"></script>
 <style>
   /* এই পেজের জন্য কিছু addition — বাকি সব ../style.css থেকে আসছে (products/index.html-এর প্যাটার্নেই) */
   .listing-section{padding:44px 0 64px;}
@@ -47,6 +48,15 @@
   }
   .product-card-link .price-line span{font-family:'Hind Siliguri',sans-serif; font-size:11.5px; font-weight:400; color:#6b7690; margin-left:4px;}
 
+
+  /* এই ক্যাটাগরির ভেতরে নাম দিয়ে খোঁজার বক্স (fashion/furniture-grid.js-এর productSearchInput) */
+  .page-search-input{
+    display:block; width:100%; max-width:420px; margin:0 0 26px;
+    padding:12px 16px; font-size:15px; font-family:'Hind Siliguri',sans-serif;
+    border:1.5px solid var(--line); border-radius:8px; background:#fff;
+  }
+  .page-search-input:focus{outline:none; border-color:var(--brass);}
+
   @media (max-width:560px){
     .wrap{padding:0 10px;}
     .listing-section{padding:26px 0 40px;}
@@ -62,8 +72,23 @@
     <div class="logo"><a href="/"><img src="../images/logo_pic.jpeg" alt="MAAMME.COM"><span class="logo-text">Maamme<span>.com</span></span></a></div>
     <ul class="nav-links">
       <li><a href="/">হোম</a></li>
-      <li><a href="index.html">ফার্নিচার</a></li>
-      <li><a href="../fashion/index.html">ফ্যাশন</a></li>
+      <li class="has-dropdown">
+        <a href="../furniture/index.html" class="dropdown-toggle">ফার্নিচার <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a></li>
+          <li><a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a></li>
+        </ul>
+      </li>
+      <li class="has-dropdown">
+        <a href="../fashion/index.html" class="dropdown-toggle">ফ্যাশন <span class="caret">▾</span></a>
+        <ul class="dropdown-menu">
+          <li><a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a></li>
+          <li><a href="../fashion/index.html?cat=two-piece">টু পিস</a></li>
+          <li><a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a></li>
+        </ul>
+      </li>
       <li><a href="../products/index.html">প্রোডাক্ট_পোস্ট</a></li>
       <li><a href="../about-us.html">আমাদের সম্পর্কে</a></li>
     </ul>
@@ -74,9 +99,29 @@
     <div class="nav-actions" id="navActions">
       <div class="mobile-nav-links">
         <a href="/">হোম</a>
-        <a href="index.html">ফার্নিচার</a>
-        <a href="../fashion/index.html">ফ্যাশন</a>
-        <a href="../products/index.html">প্রোডাক্ট_পোস্ট</a>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফার্নিচার <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../furniture/index.html">সব ফার্নিচার দেখুন</a>
+            <a href="../furniture/index.html?cat=steel-chair">স্টিল চেয়ার</a>
+            <a href="../furniture/index.html?cat=office-chair">অফিস চেয়ার</a>
+            <a href="../furniture/index.html?cat=dining-chair">ডাইনিং চেয়ার</a>
+            <a href="../furniture/index.html?cat=foldable-bed">ফোল্ডেবল বেড</a>
+          </div>
+        </div>
+
+        <div class="mobile-nav-group">
+          <button type="button" class="mobile-nav-parent" onclick="toggleMobileSubmenu(this)">ফ্যাশন <span class="caret">▾</span></button>
+          <div class="mobile-submenu">
+            <a href="../fashion/index.html">সব ফ্যাশন দেখুন</a>
+            <a href="../fashion/index.html?cat=one-piece">ওয়ান পিস</a>
+            <a href="../fashion/index.html?cat=two-piece">টু পিস</a>
+            <a href="../fashion/index.html?cat=three-piece">থ্রি পিস</a>
+          </div>
+        </div>
+
+        <a href="../products/index.html">প্রোডাক্ট</a>
         <a href="../about-us.html">আমাদের সম্পর্কে</a>
       </div>
       <a href="../track.html" class="nav-cta-outline">ট্র্যাক করুন</a>
@@ -102,8 +147,10 @@
     <!-- সাব-ক্যাটাগরি ফিল্টার — furniture-grid.js দিয়ে ডাইনামিকভাবে বসে (URL-এর ?cat= অনুযায়ী active) -->
     <div class="category-chips" id="categoryChips"></div>
 
-    <!-- প্রোডাক্ট কার্ডগুলো এডমিন প্যানেলের "পোস্ট" ট্যাব থেকে ম্যানেজ করা Firestore
-         posts কালেকশন (category == "furniture") থেকে furniture-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় -->
+    <input type="text" id="productSearchInput" class="page-search-input" placeholder="এই ক্যাটাগরিতে প্রোডাক্টের নাম দিয়ে খুঁজুন" aria-label="প্রোডাক্ট খুঁজুন" autocomplete="off">
+
+    <!-- প্রোডাক্ট কার্ডগুলো এডমিন প্যানেলের "Admin Products Management" ট্যাব থেকে ম্যানেজ করা Firestore
+         products কালেকশন (category == "Furniture") থেকে furniture-grid.js দিয়ে ডাইনামিকভাবে এখানে লোড হয় -->
     <div class="product-grid-full" id="postsGrid">
       <p style="grid-column:1/-1; color:#6b7690;">লোড হচ্ছে...</p>
     </div>
@@ -163,9 +210,23 @@
   window.addEventListener('resize', () => {
     if (window.innerWidth > 560) closeMobileMenu();
   });
+
+  // মোবাইলে "ফার্নিচার"/"ফ্যাশন" বাটনে ক্লিক করলে সাব-মেনু খোলে/বন্ধ হয় (হোমপেজের মতোই)
+  function toggleMobileSubmenu(btn) {
+    const submenu = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+    document.querySelectorAll('.mobile-nav-parent.open').forEach(otherBtn => {
+      if (otherBtn !== btn) {
+        otherBtn.classList.remove('open');
+        if (otherBtn.nextElementSibling) otherBtn.nextElementSibling.classList.remove('open');
+      }
+    });
+    btn.classList.toggle('open', !isOpen);
+    if (submenu) submenu.classList.toggle('open', !isOpen);
+  }
 </script>
 
-<!-- Firebase SDK — posts কালেকশন থেকে ফার্নিচার প্রোডাক্ট গ্রিড লোড করার জন্য -->
+<!-- Firebase SDK — products কালেকশন থেকে ফার্নিচার প্রোডাক্ট গ্রিড লোড করার জন্য -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="../firebase-init.js"></script>

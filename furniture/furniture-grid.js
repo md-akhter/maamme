@@ -4,13 +4,14 @@
 // (স্টিল চেয়ার/অফিস চেয়ার/ডাইনিং চেয়ার/ফোল্ডেবল বেড) অনুযায়ী ফিল্টার করে দেখায়।
 // URL-এ ?cat=steel-chair থাকলে সেই ফিল্টার auto-select হয় (nav dropdown-এর লিংক থেকে আসলে)।
 // প্রতিটা কার্ড ../products/slug.html-এ লিংক করে — এই SEO ডিটেইল পেজটা এখনো posts
-// কালেকশন থেকে আলাদাভাবে জেনারেট হয় (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে),
+// কালেকশন (অপশনাল, শুধু SEO-র জন্য) থেকে আলাদাভাবে জেনারেট হয় (admin panel-এর "HTML ফাইল ডাউনলোড করুন" দিয়ে),
 // তাই লিংক কাজ করার জন্য একই slug-এ একটা পোস্ট HTML ফাইল আপলোড করা থাকতে হবে।
 // ============================================================
 
 const db = firebase.firestore();
 const grid = document.getElementById('postsGrid');
 const chipsWrap = document.getElementById('categoryChips');
+const searchInput = document.getElementById('productSearchInput');
 
 const SUB_CATEGORIES = [
   { key: 'all', label: 'সব' },
@@ -21,6 +22,7 @@ const SUB_CATEGORIES = [
 ];
 
 let allPosts = [];
+let searchQuery = ''; // প্রোডাক্ট নাম সার্চ বক্সের বর্তমান টেক্সট
 
 function toBanglaNumber(num) {
   const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -50,6 +52,14 @@ function formatDescription(text) {
   return escapeHtml(text).replace(/\n/g, '<br>');
 }
 
+// ছবির path — products কালেকশনে সাধারণত "images/chair1.jpeg" (সাইটের রুট থেকে) থাকে, তাই এই ফোল্ডার থেকে
+// এক ধাপ উপরে ("../") লাগে। কিন্তু পুরো URL (https://…) বা "/" দিয়ে শুরু হলে সেটা যেমন আছে তেমনই ব্যবহার হয়।
+function imageSrc(image) {
+  const img = String(image || '').trim();
+  if (/^(?:https?:)?\/\//.test(img) || img.startsWith('data:')) return img;
+  return '../' + img.replace(/^\/+/, '');
+}
+
 function getUrlCategory() {
   const params = new URLSearchParams(window.location.search);
   const key = params.get('cat');
@@ -76,10 +86,18 @@ function renderChips(activeKey) {
 function renderGrid(activeKey) {
   renderChips(activeKey);
 
-  const filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
+  let filtered = activeKey === 'all' ? allPosts : allPosts.filter(p => p.subCategory === activeKey);
+
+  // সার্চ বক্সে কিছু লেখা থাকলে প্রোডাক্টের নাম/পুরো নামের সাথে মিলিয়ে আরও ছেঁকে নেয় (ক্যাটাগরি চিপের সাথেই কাজ করে)
+  const q = searchQuery.trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q));
+  }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
+    grid.innerHTML = q
+      ? '<p style="grid-column:1/-1;">এই নামে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>'
+      : '<p style="grid-column:1/-1;">এই ক্যাটাগরিতে এখনো কোনো প্রোডাক্ট নেই।</p>';
     return;
   }
 
@@ -90,7 +108,7 @@ function renderGrid(activeKey) {
     html += `
       <div class="card reveal in">
         <a href="${detailUrl}" style="display:block; text-decoration:none; color:inherit;">
-          <div class="card-art"><img class="card-photo" src="../${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}"></div>
+          <div class="card-art"><img class="card-photo" src="${escapeHtml(imageSrc(p.image))}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" onerror="this.style.display='none';"></div>
         </a>
         <div class="card-body">
           <div class="tag">${escapeHtml(p.tag || '')}</div>
@@ -126,6 +144,14 @@ grid.addEventListener('click', (e) => {
   }
 });
 
+// প্রোডাক্ট নাম সার্চ বক্স — টাইপ করার সাথে সাথেই গ্রিড ফিল্টার হয়, বর্তমান ক্যাটাগরি চিপ ধরে রেখেই
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderGrid(getUrlCategory());
+  });
+}
+
 // "লিংক কপি করুন" বাটনে ক্লিক — প্রোডাক্ট ডিটেইল পেজের লিংক কপি হয়।
 // grid-এর উপর event delegation ব্যবহার করা হয়েছে, কারণ renderGrid() প্রতিবার
 // innerHTML রিপ্লেস করে, তাই কার্ডের উপর সরাসরি addEventListener বসালে সেটা
@@ -148,10 +174,14 @@ grid.addEventListener('click', (e) => {
   }
 });
 
-db.collection('products').where('category', '==', 'Furniture').orderBy('order', 'asc').get()
+// orderBy('order') বাদ — category + order একসাথে ব্যবহার করলে Firestore-এ composite index লাগে (না থাকলে
+// পুরো গ্রিড ফাঁকা/এরর দেখাত), আর order ফিল্ড নেই এমন প্রোডাক্টও বাদ পড়ত। তাই এখানে আনার পর নিজেই সাজানো হয়।
+db.collection('products').where('category', '==', 'Furniture').get()
   .then((snapshot) => {
     allPosts = [];
     snapshot.forEach((doc) => allPosts.push({ id: doc.id, ...doc.data() }));
+    // ক্রম নম্বর (order) অনুযায়ী ছোট থেকে বড়; order না থাকলে সবার শেষে
+    allPosts.sort((a, b) => (Number.isFinite(a.order) ? a.order : 1e9) - (Number.isFinite(b.order) ? b.order : 1e9));
 
     if (allPosts.length === 0) {
       chipsWrap.innerHTML = '';
