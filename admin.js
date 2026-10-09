@@ -161,8 +161,8 @@ function renderOrders() {
               ${timeStr ? `<span class="order-time">${escapeHtml(timeStr)}</span>` : ''}
             </div>
           </div>
+          <div>${escapeHtml(o.product)}${Number(o.quantity) > 1 ? ' × ' + escapeHtml(o.quantity) : ''}</div>
           <div>${escapeHtml(o.name)} — ${escapeHtml(o.phone)}</div>
-          <div>${escapeHtml(o.product)} × ${escapeHtml(o.quantity)}</div>
           <div>${escapeHtml(o.address)}</div>
           ${o.note ? `<div class="order-note">মন্তব্য: ${escapeHtml(o.note)}</div>` : ''}
           <div class="order-total">৳ ${escapeHtml(total)}</div>
