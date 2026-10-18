@@ -336,13 +336,110 @@ function ensureUniqueOrderId(attempt) {
     .catch(() => { /* চেক ছাড়াই এগিয়ে যাও */ });
 }
 
-// Step 1 → Step 2: submitting the form generates the order details / receipt
+// ============================================================
+// অর্ডার ফর্ম — "অর্ডার কনফার্ম করুন" চাপলেই সরাসরি অর্ডার জমা হয় (আলাদা কনফার্ম ধাপ নেই)।
+// জমা সফল হলে: স্বাগতম বার্তা + অর্ডার আইডি ("সেভ করে রাখুন") + অর্ডার ডিটেইলস দেখানো হয়,
+// আর কনফার্ম বাটন ঝাপসা/বন্ধ হয়ে যায় — যাতে একই অর্ডার দুইবার জমা না হয়।
+// ============================================================
 const form = document.getElementById('orderForm');
 const receiptView = document.getElementById('receiptView');
+const submitBtn = form.querySelector('button[type="submit"]');
+const SUBMIT_LABEL = 'অর্ডার কনফার্ম করুন';
 let lastOrder = null;
+let isSubmitting = false;   // জমা চলাকালীন/জমা হওয়ার পর দ্বিতীয়বার সাবমিট আটকাতে
+
+// বাটন ঝাপসা + ক্লিক বন্ধ (on = true) / আগের অবস্থা (on = false)
+function blurButton(btn, on) {
+  btn.style.opacity = on ? '0.55' : '';
+  btn.style.filter = on ? 'blur(1px)' : '';
+  btn.style.pointerEvents = on ? 'none' : '';
+  btn.style.cursor = on ? 'not-allowed' : '';
+}
+
+function saveOrderToFirestore() {
+  if (!(window.firebase && firebase.firestore)) return Promise.reject(new Error('firebase-unavailable'));
+  return ensureUniqueOrderId().then(() => firebase.firestore().collection('orders').add({
+    orderId: lastOrder.orderId,
+    name: lastOrder.name,
+    phone: lastOrder.phone,
+    product: lastOrder.product,
+    quantity: lastOrder.qty,
+    address: lastOrder.address,
+    note: lastOrder.note,
+    total: lastOrder.total,
+    date: lastOrder.dateStr,
+    status: 'pending',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }));
+}
+
+// Meta Pixel — Firestore-এ অর্ডার সফলভাবে সেভ হওয়ার পরই Purchase ইভেন্ট পাঠানো হচ্ছে
+// (আগে না, যাতে ব্যর্থ/অসম্পূর্ণ অর্ডার ভুলভাবে Purchase হিসেবে কাউন্ট না হয়)।
+// orderId-কে event_id হিসেবে পাঠানো হচ্ছে — ভবিষ্যতে Conversions API (সার্ভার-সাইড) যোগ হলে
+// একই orderId মিললে Meta দুইবার একই অর্ডার কাউন্ট করবে না (deduplication)।
+function firePurchasePixel() {
+  if (typeof fbq !== 'function') return;
+  // Manual Advanced Matching: অর্ডার ফর্ম কাস্টম বানানো বলে Meta-র automatic matching ফোন নম্বরের
+  // ফিল্ড নিজে থেকে ধরতে পারছিল না (Event Match Quality কম দেখাচ্ছিল)। তাই Purchase পাঠানোর
+  // ঠিক আগে fbq('init', ...) আবার কল করে ফোন নম্বরটা পাঠিয়ে দেওয়া হচ্ছে — এটা Meta-র অফিসিয়াল
+  // manual advanced matching পদ্ধতি, পিক্সেল নিজেই SHA-256 দিয়ে হ্যাশ করে নেয়। এতে নতুন করে
+  // PageView ফায়ার হয় না, কারণ PageView আলাদা করে ট্র্যাক করা হয় pixel.js-এ।
+  // Meta চায় ফোন হবে দেশের কোডসহ শুধু সংখ্যা (880…), আর নাম ছোট হাতের অক্ষরে
+  let phDigits = lastOrder.phone.replace(/\D/g, '');
+  if (phDigits.startsWith('0')) phDigits = '880' + phDigits.slice(1);
+  fbq('init', '1953763731979924', {
+    ph: phDigits,
+    fn: lastOrder.name.toLowerCase(),
+    external_id: lastOrder.orderId
+  });
+
+  fbq('track', 'Purchase', {
+    value: lastOrder.total,
+    currency: 'BDT',
+    content_name: lastOrder.product,
+    content_type: 'product',
+    num_items: lastOrder.qty
+  }, { eventID: lastOrder.orderId });
+}
+
+// অর্ডার সফলভাবে জমা হওয়ার পর স্বাগতম + আইডি + ডিটেইলস দেখানো
+function showOrderConfirmed() {
+  const o = lastOrder;
+  document.getElementById('receiptId').textContent = '#' + o.orderId;
+  document.getElementById('welcomeName').textContent = o.name;
+  document.getElementById('welcomeId').textContent = o.orderId;
+  document.getElementById('rcName').textContent = o.name;
+  document.getElementById('rcPhone').textContent = o.phone;
+  document.getElementById('rcProduct').textContent = o.product;
+  document.getElementById('rcQty').textContent = o.qty;
+  document.getElementById('rcAddress').textContent = o.address;
+  document.getElementById('rcDate').textContent = o.dateStr;
+  const noteRow = document.getElementById('rcNoteRow');
+  if (o.note) { noteRow.style.display = 'flex'; document.getElementById('rcNote').textContent = o.note; }
+  else { noteRow.style.display = 'none'; }
+  document.getElementById('rcTotal').textContent = o.total > 0 ? formatTaka(o.total) : 'যোগাযোগ সাপেক্ষে';
+
+  // কনফার্ম বাটন: ঝাপসা + বন্ধ — আর চাপা যাবে না
+  const confirmBtn = document.getElementById('confirmOrderBtn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
+  blurButton(confirmBtn, true);
+  document.getElementById('confirmNote').textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
+  document.getElementById('trackHint').style.display = 'block';
+
+  const copyBtn = document.getElementById('copyIdBtn');
+  copyBtn.textContent = '📋 আইডি কপি করুন';
+
+  form.style.display = 'none';
+  receiptView.style.display = 'block';
+  receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try { firePurchasePixel(); } catch (err) { console.error('Pixel error:', err); }
+}
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
+  if (isSubmitting) return;
 
   const formError = document.getElementById('formError');
   const name = document.getElementById('name').value.trim();
@@ -383,96 +480,39 @@ form.addEventListener('submit', (e) => {
   lastOrder = { name, phone, product, qty, address, note, total, orderId, dateStr };
   document.getElementById('orderIdField').value = orderId;
 
-  document.getElementById('receiptId').textContent = '#' + orderId;
-  document.getElementById('rcName').textContent = name;
-  document.getElementById('rcPhone').textContent = phone;
-  document.getElementById('rcProduct').textContent = product;
-  document.getElementById('rcQty').textContent = qty;
-  document.getElementById('rcAddress').textContent = address;
-  document.getElementById('rcDate').textContent = dateStr;
-  const noteRow = document.getElementById('rcNoteRow');
-  if (note) { noteRow.style.display = 'flex'; document.getElementById('rcNote').textContent = note; }
-  else { noteRow.style.display = 'none'; }
-  document.getElementById('rcTotal').textContent = total > 0 ? formatTaka(total) : 'যোগাযোগ সাপেক্ষে';
+  // সরাসরি জমা — বাটন সাথে সাথে ঝাপসা/বন্ধ, যাতে দ্বিতীয়বার চাপা না যায়
+  isSubmitting = true;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'অর্ডার জমা হচ্ছে...';
+  blurButton(submitBtn, true);
 
-  const confirmBtn = document.getElementById('confirmOrderBtn');
-  confirmBtn.disabled = false;
-  confirmBtn.textContent = 'কনফার্ম করুন';
-  document.getElementById('confirmNote').textContent = 'অর্ডার ডিটেইলস পর্যালোচনা করে "কনফার্ম করুন"-এ চাপুন — তাহলে অর্ডারটি আমাদের কাছে জমা হয়ে যাবে।';
-
-  form.style.display = 'none';
-  receiptView.style.display = 'block';
-  receiptView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // .then(সফল, ব্যর্থ) — সফল অংশে কোনো সমস্যা হলে ভুলক্রমে "ব্যর্থ" ধরে আবার জমা দেওয়ার সুযোগ দেওয়া হয় না
+  saveOrderToFirestore().then(
+    () => { showOrderConfirmed(); },
+    (err) => {
+      console.error('Firestore save failed:', err);
+      isSubmitting = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = SUBMIT_LABEL;
+      blurButton(submitBtn, false);
+      formError.textContent = (err && err.message === 'firebase-unavailable')
+        ? 'দুঃখিত, সংযোগে সমস্যা হচ্ছে — ইন্টারনেট চেক করে পেজ রিফ্রেশ করে আবার চেষ্টা করুন।'
+        : 'দুঃখিত, অর্ডার জমা হয়নি — একটু পর আবার "অর্ডার কনফার্ম করুন" চাপুন। (আপনার দেওয়া তথ্য ফর্মেই আছে)';
+      formError.style.display = 'block';
+    }
+  );
 });
 
-// Confirm — Firestore-এ অর্ডার সেভ করে (+ Netlify Forms ব্যাকআপ, Vercel-এ silently fail করবে)
-document.getElementById('confirmOrderBtn').addEventListener('click', (e) => {
+// "আইডি কপি করুন" — কাস্টমার যেন সহজে অর্ডার আইডি সেভ করে রাখতে পারে
+document.getElementById('copyIdBtn').addEventListener('click', (e) => {
   if (!lastOrder) return;
   const btn = e.currentTarget;
-  const note = document.getElementById('confirmNote');
-
-  btn.disabled = true;
-  btn.textContent = 'পাঠানো হচ্ছে...';
-
-  if (window.firebase && firebase.firestore) {
-    ensureUniqueOrderId().then(() => firebase.firestore().collection('orders').add({
-      orderId: lastOrder.orderId,
-      name: lastOrder.name,
-      phone: lastOrder.phone,
-      product: lastOrder.product,
-      quantity: lastOrder.qty,
-      address: lastOrder.address,
-      note: lastOrder.note,
-      total: lastOrder.total,
-      date: lastOrder.dateStr,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }))
-    .then(() => {
-      btn.textContent = '✓ অর্ডার কনফার্ম হয়েছে';
-      note.textContent = 'ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।';
-      document.getElementById('trackHint').style.display = 'block';
-
-      // Meta Pixel — Firestore-এ অর্ডার সফলভাবে সেভ হওয়ার পরই Purchase ইভেন্ট পাঠানো
-      // হচ্ছে (আগে না, যাতে ব্যর্থ/অসম্পূর্ণ অর্ডার ভুলভাবে Purchase হিসেবে কাউন্ট না হয়)।
-      // orderId-কে event_id হিসেবে পাঠানো হচ্ছে — ভবিষ্যতে Conversions API (সার্ভার-সাইড)
-      // যোগ হলে একই orderId মিললে Meta দুইবার একই অর্ডার কাউন্ট করবে না (deduplication)।
-      if (typeof fbq === 'function') {
-        // Manual Advanced Matching: অর্ডার ফর্ম কাস্টম বানানো বলে Meta-র automatic
-        // matching ফোন নম্বরের ফিল্ড নিজে থেকে ধরতে পারছিল না (Event Match Quality কম
-        // দেখাচ্ছিল, "Advanced matching parameters: IP address, User agent" শুধু)।
-        // তাই Purchase পাঠানোর ঠিক আগে fbq('init', ...) আবার কল করে ফোন নম্বরটা পাঠিয়ে
-        // দেওয়া হচ্ছে — এটা Meta-র অফিসিয়াল manual advanced matching পদ্ধতি, পিক্সেল
-        // নিজেই SHA-256 দিয়ে হ্যাশ করে নেয় (এখানে raw নম্বর পাঠালেই চলে)। এতে নতুন করে
-        // PageView ফায়ার হয় না, কারণ PageView আলাদা করে ট্র্যাক করা হয় pixel.js-এ।
-        // Meta চায় ফোন হবে দেশের কোডসহ শুধু সংখ্যা (880…), আর নাম ছোট হাতের অক্ষরে
-        let phDigits = lastOrder.phone.replace(/\D/g, '');
-        if (phDigits.startsWith('0')) phDigits = '880' + phDigits.slice(1);
-        fbq('init', '1953763731979924', {
-          ph: phDigits,
-          fn: lastOrder.name.toLowerCase(),
-          external_id: lastOrder.orderId
-        });
-
-        fbq('track', 'Purchase', {
-          value: lastOrder.total,
-          currency: 'BDT',
-          content_name: lastOrder.product,
-          content_type: 'product',
-          num_items: lastOrder.qty
-        }, { eventID: lastOrder.orderId });
-      }
-    })
-    .catch((err) => {
-      console.error('Firestore save failed:', err);
-      btn.disabled = false;
-      btn.textContent = 'আবার চেষ্টা করুন';
-      note.textContent = 'দুঃখিত, পাঠাতে সমস্যা হয়েছে — একটু পর আবার চেষ্টা করুন।';
-    });
+  const id = lastOrder.orderId;
+  const done = () => { btn.textContent = '✓ কপি হয়েছে'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(id).then(done).catch(() => window.prompt('অর্ডার আইডি কপি করুন:', id));
   } else {
-    btn.disabled = false;
-    btn.textContent = 'আবার চেষ্টা করুন';
-    note.textContent = 'দুঃখিত, সংযোগে সমস্যা হচ্ছে — ইন্টারনেট চেক করে পেজ রিফ্রেশ করে আবার চেষ্টা করুন।';
+    window.prompt('অর্ডার আইডি কপি করুন:', id);
   }
 });
 
@@ -483,6 +523,10 @@ document.getElementById('newOrderBtn').addEventListener('click', () => {
   document.querySelectorAll('.pick-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('formError').style.display = 'none';
   receiptView.style.display = 'none';
+  isSubmitting = false;
+  submitBtn.disabled = false;
+  submitBtn.textContent = SUBMIT_LABEL;
+  blurButton(submitBtn, false);
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });

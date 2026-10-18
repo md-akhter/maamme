@@ -288,7 +288,7 @@
 
     <div class="ledger reveal">
 
-      <!-- ---- STEP 1: ORDER FORM ---- -->
+      <!-- ---- ORDER FORM — "অর্ডার কনফার্ম করুন" চাপলেই সরাসরি অর্ডার জমা হয় ---- -->
       <form id="orderForm" name="order" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
         <input type="hidden" name="form-name" value="order">
         <input type="hidden" name="order_id" id="orderIdField" value="">
@@ -333,12 +333,12 @@
           <b id="totalAmount">৳ ০</b>
         </div>
 
-        <button type="submit" class="submit-btn">অর্ডার ডিটেইলস দেখুন</button>
+        <button type="submit" class="submit-btn">অর্ডার কনফার্ম করুন</button>
         <div class="form-note" id="formError" style="display:none; color:var(--rust); font-weight:600;"></div>
-        <div class="form-note">সাবমিট করলে আপনার অর্ডারের সারসংক্ষেপ (order details) তৈরি হবে।</div>
+        <div class="form-note">"অর্ডার কনফার্ম করুন" চাপলেই আপনার অর্ডারটি সরাসরি জমা হয়ে যাবে — অর্ডার আইডিসহ ডিটেইলস পরের ধাপে দেখতে পাবেন।</div>
       </form>
 
-      <!-- ---- STEP 2: ORDER CONFIRMATION / RECEIPT ---- -->
+      <!-- ---- অর্ডার জমা হওয়ার পর: স্বাগতম বার্তা + অর্ডার আইডি + ডিটেইলস ---- -->
       <div class="receipt" id="receiptView" style="display:none;">
         <div class="receipt-head">
           <div>
@@ -346,6 +346,12 @@
             <h3 style="margin:6px 0 0; font-family:'Fraunces',serif; font-weight:500;">অর্ডার ডিটেইলস</h3>
           </div>
           <div class="receipt-id" id="receiptId">#AS-000000</div>
+        </div>
+        <div id="welcomeBox" style="margin:4px 0 18px; padding:16px 18px; border-radius:6px; background:rgba(78,91,65,0.10); border:1px solid rgba(78,91,65,0.35); line-height:1.7; color:var(--text-dark);">
+          <div style="font-size:16px; font-weight:600;">🎉 স্বাগতম, <span id="welcomeName"></span>! আপনার অর্ডার কনফার্ম হয়েছে।</div>
+          <div style="margin-top:8px; font-size:14px;">আপনার অর্ডার আইডি: <b id="welcomeId" style="font-family:'Fraunces',serif; font-size:17px; letter-spacing:.02em;"></b></div>
+          <div style="margin-top:4px; font-size:13.5px;"><b>এই আইডিটি সেভ করে রাখুন</b> (কপি বা স্ক্রিনশট করে) — পরে অর্ডারের স্ট্যাটাস জানতে এটা লাগবে।</div>
+          <button type="button" class="btn-ghost-dark" id="copyIdBtn" style="margin-top:10px; width:auto; padding:8px 16px;">📋 আইডি কপি করুন</button>
         </div>
         <div class="receipt-rows">
           <div class="receipt-row"><span>নাম</span><b id="rcName"></b></div>
@@ -360,9 +366,9 @@
           <span>সর্বমোট</span>
           <b id="rcTotal">৳ ০</b>
         </div>
-        <button type="button" class="submit-btn" id="confirmOrderBtn">কনফার্ম করুন</button>
+        <button type="button" class="submit-btn" id="confirmOrderBtn" disabled style="opacity:.55; filter:blur(1px); pointer-events:none; cursor:not-allowed;">✓ অর্ডার কনফার্ম হয়েছে</button>
         <button type="button" class="btn-ghost-dark" id="newOrderBtn">নতুন করে অর্ডার করুন</button>
-        <div class="form-note" id="confirmNote">অর্ডার ডিটেইলস পর্যালোচনা করে "কনফার্ম করুন"-এ চাপুন — তাহলে অর্ডারটি আমাদের কাছে জমা হয়ে যাবে।</div>
+        <div class="form-note" id="confirmNote">ধন্যবাদ! আপনার অর্ডারটি জমা হয়ে গেছে — আমরা শীঘ্রই ফোনে যোগাযোগ করব।</div>
         <div class="form-note" id="trackHint" style="display:none;">পরে স্ট্যাটাস জানতে যেকোনো সময় <a href="track.html" style="color:var(--brass);">track.html</a>-এ গিয়ে এই Order ID অথবা আপনার ফোন নম্বর দিয়ে চেক করুন।</div>
       </div>
 
@@ -413,7 +419,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-init.js"></script>
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 
 </body>
 </html>
