@@ -47,6 +47,30 @@ function escapeHtml(value) {
 
 // অ্যাডমিনে বিবরণ একাধিক লাইনে (বুলেট আকারে) লেখা যায় — escape করার পর \n কে <br> এ
 // বদলে দেয় যাতে কার্ডেও প্রতিটা লাইন আলাদা করে দেখায় (home পেজের script.js-এর মতোই)
+// সেল: প্রোডাক্টে "সেল" টগল ON আর salePrice আসল দামের চেয়ে কম হলে তবেই সেল দাম কার্যকর হয় —
+// নইলে আগের মতোই সাধারণ দাম দেখায় (ভুল/বেশি সেল দাম দিলেও কার্ড ভাঙে না)।
+function isOnSale(p) {
+  const price = Number(p.price) || 0;
+  const sale = Number(p.salePrice) || 0;
+  return !!p.onSale && sale > 0 && sale < price;
+}
+
+// ডেস্কটপের .price ব্লক: সেল হলে ওপরে আসল দাম কাটা, নিচের লাইনে (যেখানে "প্রতি পিস" ছিল) নতুন দাম লাল রঙে
+function priceHtml(p) {
+  const unit = escapeHtml(p.priceUnit || 'প্রতি পিস');
+  if (!isOnSale(p)) return `${formatTakaBn(p.price)}<small>${unit}</small>`;
+  return `<s style="display:inline-block; font-size:15px; font-weight:500; color:#8a93a8; text-decoration:line-through; text-decoration-color:#d93025; text-decoration-thickness:1.5px;">${formatTakaBn(p.price)}</s>`
+    + `<small><b style="font-family:'Fraunces',serif; font-size:19px; font-weight:700; color:#d93025;">${formatTakaBn(p.salePrice)}</b> ${unit}</small>`;
+}
+
+// মোবাইলের .price-inline ব্লক (CSS এখানকার <span> লুকিয়ে ফেলে, তাই সেল দামে <s>/<b> ব্যবহার)
+function inlinePriceHtml(p) {
+  const unit = escapeHtml(p.priceUnit || 'প্রতি পিস');
+  if (!isOnSale(p)) return `${formatTakaBn(p.price)}<span>${unit}</span>`;
+  return `<s style="font-size:11.5px; font-weight:500; color:#8a93a8; text-decoration-color:#d93025;">${formatTakaBn(p.price)}</s>`
+    + `<b style="color:#d93025;">${formatTakaBn(p.salePrice)}</b>`;
+}
+
 function formatDescription(text) {
   return escapeHtml(text).replace(/\n/g, '<br>');
 }
@@ -112,8 +136,9 @@ function renderGrid(activeKey) {
         <div class="card-body">
           <div class="tag">${escapeHtml(p.tag || '')}</div>
           <a href="${detailUrl}" style="text-decoration:none; color:inherit;"><h3>${escapeHtml(p.name)}</h3></a>
+          <div class="details-price-row"><div class="price-inline">${inlinePriceHtml(p)}</div></div>
           <div class="card-foot">
-            <div class="price">${formatTakaBn(p.price)}<small>${escapeHtml(p.priceUnit || 'প্রতি পিস')}</small></div>
+            <div class="price">${priceHtml(p)}</div>
             <a class="pick-btn" style="display:inline-block; text-decoration:none;" href="/?product=${encodeURIComponent(slug)}#order">অর্ডার করুন</a>
           </div>
           <button class="copy-link-btn" type="button" data-slug="${escapeHtml(slug)}">🔗 লিংক কপি করুন</button>
