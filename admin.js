@@ -72,7 +72,51 @@ const ORDER_STATUSES = [
 
 let allOrders = [];      // সব অর্ডার এখানে ক্যাশ থাকে — বারবার Firestore থেকে না এনে filter/count করা যায়
 let currentFilter = 'all';
-let orderSearchQuery = ''; // ফোন নম্বর/অর্ডার আইডি সার্চ বক্সের বর্তমান টেক্সট
+let orderSearchQuery = ''; // নাম/ফোন নম্বর/অর্ডার আইডি সার্চ বক্সের বর্তমান টেক্সট
+
+// ---------- অর্ডার সার্চের সহায়ক ফাংশন ----------
+// বাংলা সংখ্যা (০১৭১২…) ইংরেজিতে — ফোন/আইডি বাংলা সংখ্যায় লিখলেও যেন মেলে
+function toEnglishDigits(str) {
+  return String(str).replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
+}
+
+// নাম মেলানোর জন্য: ছোট হাতের অক্ষর, বাংলা ইউনিকোড একরূপ (যেমন "য়" দুইভাবে লেখা থাকলেও এক ধরা হয়),
+// অদৃশ্য জয়েনার (ZWJ/ZWNJ) বাদ, বাড়তি স্পেস এক স্পেস
+function normalizeText(str) {
+  return String(str || '').normalize('NFC').replace(/[\u200c\u200d]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// একটা অর্ডার সার্চ টেক্সটের সাথে মেলে কিনা — অর্ডার আইডি, ফোন নম্বর (যেকোনো ফরম্যাট) অথবা
+// কাস্টমারের নাম (বাংলা বা ইংরেজি, যে ভাষায় অর্ডারে লেখা আছে সেই ভাষায় খুঁজলেই মিলবে)
+function orderMatchesSearch(o, rawQuery) {
+  const q = normalizeText(toEnglishDigits(rawQuery));
+  if (!q) return true;
+
+  // ফোন: ১০ বা তার বেশি সংখ্যা দিলে শেষ ১০ সংখ্যা মেলানো হয় (+880…/880…/01… সব ফরম্যাট একই ধরা হয়),
+  // কম সংখ্যা দিলে নম্বরের যেকোনো অংশে মিললেই চলে
+  const qDigits = q.replace(/\D/g, '');
+  const phoneDigits = toEnglishDigits(o.phone || '').replace(/\D/g, '');
+  let phoneMatch = false;
+  if (qDigits) {
+    phoneMatch = qDigits.length >= 10 ? phoneDigits.endsWith(qDigits.slice(-10)) : phoneDigits.includes(qDigits);
+  }
+
+  // অর্ডার আইডি: "AS-455402", "as455402", "455402" সবই চলে — তবে শুধু যখন সার্চে সংখ্যা আছে
+  // (নাহলে "a" লিখলেই সব অর্ডারের "AS-…" আইডিতে মিলে নামের সার্চ এলোমেলো হয়ে যেত)
+  let idMatch = false;
+  if (/\d/.test(q)) {
+    const idNorm = (o.orderId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const qNorm = q.replace(/[^a-z0-9]/g, '');
+    idMatch = !!qNorm && idNorm.includes(qNorm);
+  }
+
+  // নাম: একাধিক শব্দ লিখলে সবগুলো শব্দ নামে (যেকোনো ক্রমে) থাকলেই মেলে — "কামাল মোস্তফা" বা "bhuiyan tanvir"
+  const name = normalizeText(o.name);
+  const words = q.split(' ').filter(Boolean);
+  const nameMatch = words.length > 0 && words.every(w => name.includes(w));
+
+  return phoneMatch || idMatch || nameMatch;
+}
 
 function createdMs(o) {
   return (o.createdAt && typeof o.createdAt.toMillis === 'function') ? o.createdAt.toMillis() : 0;
@@ -126,18 +170,12 @@ function renderOrders() {
   });
   statsHtml += '</div>';
 
-  // সার্চ বক্সে কিছু লেখা থাকলে — ফোন নম্বর বা অর্ডার আইডি দিয়ে সব স্ট্যাটাস জুড়ে খোঁজা হয়
+  // সার্চ বক্সে কিছু লেখা থাকলে — নাম, ফোন নম্বর বা অর্ডার আইডি দিয়ে সব স্ট্যাটাস জুড়ে খোঁজা হয়
   // (স্ট্যাটাস চিপ তখন উপেক্ষা করা হয়, কারণ ইউজার তো জানেই না অর্ডারটা এখন কোন স্ট্যাটাসে আছে)
   const searchQ = orderSearchQuery.trim().toLowerCase();
   let filtered;
   if (searchQ) {
-    const queryDigits = searchQ.replace(/\D/g, '');
-    filtered = allOrders.filter(o => {
-      const idMatch = (o.orderId || '').toLowerCase().includes(searchQ);
-      const phoneDigits = (o.phone || '').replace(/\D/g, '');
-      const phoneMatch = queryDigits && phoneDigits.includes(queryDigits);
-      return idMatch || phoneMatch;
-    });
+    filtered = allOrders.filter(o => orderMatchesSearch(o, orderSearchQuery));
   } else {
     filtered = currentFilter === 'all' ? allOrders : allOrders.filter(o => (o.status || 'pending') === currentFilter);
   }
@@ -145,7 +183,7 @@ function renderOrders() {
   let itemsHtml = '';
   if (filtered.length === 0) {
     itemsHtml = searchQ
-      ? '<p style="padding:10px 0;">এই নম্বর/আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি।</p>'
+      ? '<p style="padding:10px 0;">এই নাম/নম্বর/আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি।</p>'
       : '<p style="padding:10px 0;">এই স্ট্যাটাসে কোনো অর্ডার নেই।</p>';
   } else {
     filtered.forEach((o) => {
@@ -1375,7 +1413,7 @@ function updateCsvFilterCount() {
   if (el) el.addEventListener('change', updateCsvFilterCount);
 });
 
-// ফোন নম্বর/অর্ডার আইডি সার্চ বক্স — টাইপ করার সাথে সাথেই লিস্ট ফিল্টার হয়ে যায়
+// নাম/ফোন নম্বর/অর্ডার আইডি সার্চ বক্স — টাইপ করার সাথে সাথেই লিস্ট ফিল্টার হয়ে যায়
 const orderSearchInput = document.getElementById('orderSearchInput');
 if (orderSearchInput) {
   orderSearchInput.addEventListener('input', (e) => {
