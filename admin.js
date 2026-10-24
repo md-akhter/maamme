@@ -417,10 +417,14 @@ function loadProducts() {
         const p = prod;
         const doc = { id: prod.id };
         const price = p.price ? Number(p.price).toLocaleString('en-IN') : '—';
+        const onSaleNow = !!p.onSale && Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price);
+        const priceHtmlAdmin = onSaleNow
+          ? `<s>৳ ${escapeHtml(price)}</s> → <b style="color:#c0533e;">৳ ${escapeHtml(Number(p.salePrice).toLocaleString('en-IN'))}</b> 🏷️ সেল`
+          : `৳ ${escapeHtml(price)}`;
         const position = index + 1;
         html += `
           <div class="order-item">
-            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>৳ ${escapeHtml(price)}</span></div>
+            <div class="order-top"><b>#${position}/${total} — ${escapeHtml(p.name)}</b><span>${priceHtmlAdmin}</span></div>
             <div>${escapeHtml(p.fullName)}</div>
             <div class="order-note">${escapeHtml(p.tag)} · ${escapeHtml(p.category || 'Home')}${p.subCategory ? ' - ' + escapeHtml(p.subCategory) : ''}${p.showOnHomepage ? ' · 🏠 Homepage-এও দেখাচ্ছে' : ''} · slug: ${escapeHtml(p.slug || doc.id)} · ক্রম: ${escapeHtml(p.order ?? '—')}</div>
             <div class="status-row">
@@ -478,7 +482,16 @@ function saveProduct() {
     return;
   }
 
-  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory, showOnHomepage };
+  // সেল: টগল ON হলে সেল দাম বাধ্যতামূলক এবং আসল দামের চেয়ে কম হতে হবে (নইলে কার্ডে কোনো ছাড় দেখাবে না)
+  const onSale = document.getElementById("pOnSale").checked;
+  const salePrice = Number(document.getElementById("pSalePrice").value) || 0;
+  if (onSale && !(salePrice > 0 && salePrice < price)) {
+    msg.style.color = "#c0533e";
+    msg.textContent = "সেল ON করলে সেল দাম দিতে হবে, আর সেটা আসল দামের (৳" + price + ") চেয়ে কম হতে হবে।";
+    return;
+  }
+
+  const productData = { name, fullName, tag, description, price, image, slug, order, category, subCategory, showOnHomepage, onSale, salePrice };
 
   // slug-কেই doc ID হিসেবে ব্যবহার করা হচ্ছে — যাতে link/anchor মেলে।
   // এডিট মোডে slug বদলে গেলে batch ব্যবহার করা হচ্ছে যাতে নতুন doc তৈরি ও পুরনো doc
@@ -505,6 +518,12 @@ function saveProduct() {
     });
 }
 
+// সেল টগল ON/OFF করলে সেল দামের ঘরটা দেখায়/লুকায়
+function onSaleToggleChange() {
+  document.getElementById("salePriceWrap").style.display =
+    document.getElementById("pOnSale").checked ? "block" : "none";
+}
+
 function editProduct(id) {
   db.collection("products").doc(id).get().then((doc) => {
     if (!doc.exists) return;
@@ -524,6 +543,9 @@ function editProduct(id) {
     if (p.category === 'Furniture') document.getElementById("pFurnitureSub").value = p.subCategory || 'steel-chair';
     if (p.category === 'Fashion') document.getElementById("pFashionSub").value = p.subCategory || 'three-piece';
     document.getElementById("pShowOnHomepage").checked = !!p.showOnHomepage;
+    document.getElementById("pOnSale").checked = !!p.onSale;
+    document.getElementById("pSalePrice").value = p.salePrice || '';
+    onSaleToggleChange();
 
     document.getElementById("productFormTitle").textContent = "✏️ প্রোডাক্ট এডিট করুন";
     document.getElementById("saveProductBtn").textContent = "আপডেট করুন";
@@ -554,6 +576,9 @@ function duplicateProduct(id) {
     if (p.category === 'Furniture') document.getElementById("pFurnitureSub").value = p.subCategory || 'steel-chair';
     if (p.category === 'Fashion') document.getElementById("pFashionSub").value = p.subCategory || 'three-piece';
     document.getElementById("pShowOnHomepage").checked = !!p.showOnHomepage;
+    document.getElementById("pOnSale").checked = !!p.onSale;
+    document.getElementById("pSalePrice").value = p.salePrice || '';
+    onSaleToggleChange();
 
     document.getElementById("productFormTitle").textContent = "📋 কপি থেকে নতুন প্রোডাক্ট — নতুন Slug ও ছবি দিন";
     document.getElementById("saveProductBtn").textContent = "প্রোডাক্ট যোগ করুন";
@@ -577,6 +602,9 @@ function cancelEdit() {
   document.getElementById("pCategory").value = 'Home';
   onProductCategoryChange();
   document.getElementById("pShowOnHomepage").checked = false;
+  document.getElementById("pOnSale").checked = false;
+  document.getElementById("pSalePrice").value = '';
+  onSaleToggleChange();
 
   document.getElementById("productFormTitle").textContent = "➕ নতুন প্রোডাক্ট যোগ করুন";
   document.getElementById("saveProductBtn").textContent = "প্রোডাক্ট যোগ করুন";

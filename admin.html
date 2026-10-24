@@ -128,8 +128,24 @@
 সিটের উচ্চতা: সর্বোচ্চ ২৪ ইঞ্চি, সর্বনিম্ন ১৮ ইঞ্চি
 গ্যাস লিফট: অরিজিনাল চায়না গ্যাস লিফট"></textarea>
 
-            <label>দাম (টাকা, শুধু সংখ্যা)</label>
+            <label>দাম (টাকা, শুধু সংখ্যা) — সেল না থাকলে এটাই কার্ডে দেখাবে</label>
             <input type="number" id="pPrice" placeholder="4900">
+
+            <div class="toggle-row">
+                <div>
+                    <div class="toggle-label">সেল / অফার</div>
+                    <div class="toggle-sub">ON করলে কার্ডে আসল দামের ওপর দাগ (কাটা) দেখাবে আর নিচে নতুন সেল দাম লাল রঙে — অর্ডারও নতুন দামেই হবে। OFF থাকলে আগের মতোই।</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="pOnSale" onchange="onSaleToggleChange()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div id="salePriceWrap" style="display:none;">
+                <label>সেল দাম — নতুন দাম (টাকা; আসল দামের চেয়ে কম হতে হবে)</label>
+                <input type="number" id="pSalePrice" placeholder="4200">
+            </div>
 
             <label>ছবির path — যেমন: images/chair1.jpeg</label>
             <input type="text" id="pImage" placeholder="images/chair13.jpeg">
@@ -248,7 +264,7 @@
 <script src="firebase-init.js"></script>
 
 <!-- Admin logic -->
-<script src="admin.js?v=4"></script>
+<script src="admin.js?v=5"></script>
 
 </body>
 </html>

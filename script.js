@@ -70,8 +70,22 @@ function formatBengaliDate(date) {
 
 // একটা প্রোডাক্ট অবজেক্ট থেকে কার্ডের HTML বানায় — loadProducts() ও renderProductsGrid()
 // দুই জায়গাতেই (প্রথম লোড ও সার্চের পর রি-রেন্ডারে) একই ফাংশন ব্যবহার হয়
+// সেল: প্রোডাক্টে "সেল" টগল ON আর salePrice আসল দামের চেয়ে কম হলে তবেই সেল দাম কার্যকর হয়
+function isOnSale(p) {
+  const price = Number(p.price) || 0;
+  const sale = Number(p.salePrice) || 0;
+  return !!p.onSale && sale > 0 && sale < price;
+}
+
+// অর্ডারে/ড্রপডাউনে যে দাম ধরা হবে — সেল চালু থাকলে সেল দাম, নইলে সাধারণ দাম
+function effectivePrice(p) {
+  return isOnSale(p) ? Number(p.salePrice) : (Number(p.price) || 0);
+}
+
 function buildProductCardHtml(p) {
-  const priceFormatted = Number(p.price).toLocaleString('en-IN');
+  const priceFormatted = effectivePrice(p).toLocaleString('en-IN');
+  const oldPriceFormatted = (Number(p.price) || 0).toLocaleString('en-IN');
+  const onSale = isOnSale(p);
   const slug = escapeHtml(p.slug);
   const fullName = escapeHtml(p.fullName);
   return `
@@ -85,12 +99,16 @@ function buildProductCardHtml(p) {
         <h3>${escapeHtml(p.name)}</h3>
         <div class="details-price-row">
           <button type="button" class="item-details-toggle">আইটেম বিবরণ</button>
-          <div class="price-inline">৳ ${priceFormatted}<span>প্রতি পিস</span></div>
+          <div class="price-inline">${onSale
+            ? `<s style="font-size:11.5px; font-weight:500; color:#8a93a8; text-decoration-color:#d93025;">৳ ${oldPriceFormatted}</s><b style="color:#d93025;">৳ ${priceFormatted}</b>`
+            : `৳ ${priceFormatted}<span>প্রতি পিস</span>`}</div>
         </div>
         <p>${formatDescription(p.description)}</p>
         <div class="card-foot">
-          <div class="price">৳ ${priceFormatted} <small>প্রতি পিস</small></div>
-          <button class="pick-btn" type="button" data-select="${fullName} — ৳${priceFormatted}" data-name="${fullName}" data-price="${Number(p.price) || 0}" data-slug="${slug}">অর্ডার করুন</button>
+          <div class="price">${onSale
+            ? `<s style="display:inline-block; font-size:15px; font-weight:500; color:#8a93a8; text-decoration:line-through; text-decoration-color:#d93025; text-decoration-thickness:1.5px;">৳ ${oldPriceFormatted}</s><small><b style="font-family:'Fraunces',serif; font-size:19px; font-weight:700; color:#d93025;">৳ ${priceFormatted}</b> প্রতি পিস</small>`
+            : `৳ ${priceFormatted} <small>প্রতি পিস</small>`}</div>
+          <button class="pick-btn" type="button" data-select="${fullName} — ৳${priceFormatted}" data-name="${fullName}" data-price="${effectivePrice(p)}" data-slug="${slug}">অর্ডার করুন</button>
         </div>
         <button class="copy-link-btn" type="button" data-slug="${slug}">🔗 লিংক কপি করুন</button>
       </div>
@@ -127,8 +145,8 @@ function loadProducts() {
         // dropdown-এ (অর্ডার ফর্মে "চেয়ার বাছুন") সবসময় ক্যাটাগরি নির্বিশেষে *সব* প্রোডাক্ট
         // যোগ হয় — কারণ furniture/fashion পেজের "অর্ডার করুন" বাটন থেকে যেকোনো প্রোডাক্ট
         // এখানে এসে অটো-সিলেক্ট হতে পারে, সেটা হোমপেজের গ্রিডে দেখানো হোক বা না হোক।
-        const priceFormatted = Number(p.price).toLocaleString('en-IN');
-        optionsHtml += `<option data-price="${Number(p.price) || 0}" data-slug="${escapeHtml(p.slug)}">${escapeHtml(p.fullName)} — ৳${priceFormatted}</option>`;
+        const priceFormatted = effectivePrice(p).toLocaleString('en-IN');   // সেল চালু থাকলে সেল দামেই অর্ডার হবে
+        optionsHtml += `<option data-price="${effectivePrice(p)}" data-slug="${escapeHtml(p.slug)}">${escapeHtml(p.fullName)} — ৳${priceFormatted}</option>`;
 
         // হোমপেজের গ্রিডে কার্ড হিসেবে দেখানো হয় শুধু দুই শর্তের যেকোনো একটায়:
         // ১) Category = "Home" (এটাই তার স্থায়ী জায়গা), অথবা
